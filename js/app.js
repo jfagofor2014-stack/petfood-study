@@ -81,4 +81,10 @@ el.tabs.addEventListener('click', e => {
   }
 })();
 
+if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => { /* 登録失敗でもアプリは動く */ });
+  });
+}
+
 window.__pfs = ctx;   // 実機での動作確認用
