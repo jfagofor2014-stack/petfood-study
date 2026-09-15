@@ -18,12 +18,14 @@ export function renderToc(root, ctx, nav) {
   const resumeLen = at ? sectionLength(at.section) : 0;
   const resumeAt = at ? Math.max(0, Math.min(pos.sentIndex, Math.max(resumeLen - 1, 0))) : 0;
   const resumeSent = resumeAt + 1;
+  // 文数0の節（本文がまだ無い節）で「1文目から」と表示されないようにする。
+  const resumeLabel = resumeLen === 0 ? '本文がありません' : `${resumeSent}文目から`;
 
   const resume = at ? `
     <div class="card" id="t-resume">
       <div class="muted">前回の続きから</div>
       <div id="t-resume-title">第${esc(at.chapter.no)}章 ${esc(at.chapter.no)}-${esc(at.section.no)} ${esc(at.section.title)}</div>
-      <div class="muted">${resumeSent}文目から</div>
+      <div class="muted">${resumeLabel}</div>
       <button class="btn" id="t-resume-btn" style="margin-top:10px">続きを読む</button>
     </div>` : '';
 
