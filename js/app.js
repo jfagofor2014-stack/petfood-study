@@ -1,6 +1,7 @@
 import { loadBook } from './lib/db.js';
 import { createProgress } from './lib/progress.js';
 import { createSettings } from './lib/settings.js';
+import { createQuizResults } from './lib/quizresults.js';
 import { createSpeech } from './lib/speech.js';
 import { createWakeLock } from './lib/wakelock.js';
 import { renderOnboarding } from './views/onboarding.js';
@@ -20,6 +21,7 @@ const ctx = {
   book: null,
   progress: createProgress(localStorage),
   settings: createSettings(localStorage),
+  quizResults: createQuizResults(localStorage),
   speech: createSpeech({ synth: window.speechSynthesis, UtteranceCtor: window.SpeechSynthesisUtterance }),
   wakeLock: createWakeLock(navigator),
   tab: 'player',

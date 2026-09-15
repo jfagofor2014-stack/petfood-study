@@ -4,7 +4,7 @@ import { clearBook } from '../lib/db.js';
 import { escapeHtml as esc } from '../lib/html.js';
 
 export function renderSettings(root, ctx, nav) {
-  const { book, settings, speech, progress } = ctx;
+  const { book, settings, speech, progress, quizResults } = ctx;
   const cfg = settings.get();
   const info = summarize(book);
 
@@ -122,10 +122,7 @@ export function renderSettings(root, ctx, nav) {
   $('s-reset').addEventListener('click', () => {
     if (!confirm('すべての進捗とテスト成績を消します。よろしいですか。')) return;
     progress.reset();
-    // 「テスト」画面（未実装）の成績は pfs:quiz に保存される予定だが、
-    // それを管理する lib モジュールがまだ無い。他の画面が localStorage を
-    // 直接触らない方針とは整合しないため、そのまま残す。
-    localStorage.removeItem('pfs:quiz');
+    quizResults.reset();
     $('s-msg').textContent = '進捗をリセットしました。';
   });
 
