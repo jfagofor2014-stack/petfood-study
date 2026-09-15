@@ -4,6 +4,7 @@ import { createSettings } from './lib/settings.js';
 import { createSpeech } from './lib/speech.js';
 import { createWakeLock } from './lib/wakelock.js';
 import { renderOnboarding } from './views/onboarding.js';
+import { renderPlayer } from './views/player.js';
 
 const el = {
   onboarding: document.getElementById('onboarding'),
@@ -25,16 +26,21 @@ const ctx = {
 // 画面モジュールは後続タスクで実装する。未実装のタブは案内だけ出す。
 // 後続タスクはこのオブジェクトに直接キーを足していく（registerView のような
 // 登録用エクスポートは、呼び出し元が存在しないため作らない）。
-const views = {};
+const views = { player: renderPlayer };
+
+let teardown = null;
 
 function showTab(name) {
+  // 前の画面の後始末。これを怠ると、もくじタブに移っても読み上げが鳴り続ける。
+  if (teardown) { teardown(); teardown = null; }
+
   ctx.tab = name;
   for (const b of el.tabs.querySelectorAll('.tab')) {
     b.setAttribute('aria-current', String(b.dataset.tab === name));
   }
   el.view.innerHTML = '';
   const render = views[name];
-  if (render) render(el.view, ctx, { showTab });
+  if (render) teardown = render(el.view, ctx, { showTab }) || null;
   else el.view.innerHTML = '<div class="card muted">この画面はまだありません。</div>';
 }
 

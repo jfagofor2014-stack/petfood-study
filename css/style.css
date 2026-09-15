@@ -77,3 +77,37 @@ body {
 #onboarding { padding: 32px 20px; max-width: 560px; margin: 0 auto; }
 #onboarding h1 { font-size: 20px; margin: 0 0 8px; }
 #onboarding ol { padding-left: 1.2em; color: var(--muted); font-size: 14px; }
+
+/* きく画面 */
+#p-head { position: sticky; top: 44px; z-index: 5; }
+#p-title { font-weight: 700; margin-top: 2px; }
+
+#p-body { padding-bottom: 150px; }
+.p-sent {
+  display: inline; border-radius: 4px; padding: 1px 0;
+  cursor: pointer; transition: background .15s;
+}
+.p-sent.is-current { background: #ffeeb4; box-shadow: 0 0 0 3px #ffeeb4; }
+.p-list { display: block; padding-left: 1.2em; text-indent: -1.2em; }
+.p-list::before { content: "・"; }
+
+.p-fig {
+  display: block; margin: 12px 0; padding: 8px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+  cursor: pointer;
+}
+.p-fig.is-current { box-shadow: 0 0 0 3px #ffeeb4; }
+.p-fig img { display: block; width: 100%; height: auto; }
+.p-fig figcaption { font-size: 13px; color: var(--muted); margin-top: 6px; }
+
+#p-ctrl {
+  position: fixed; left: 0; right: 0; bottom: var(--tabh); z-index: 9;
+  background: var(--surface); border-top: 1px solid var(--line);
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+  display: grid; gap: 8px;
+}
+#p-rate-row { display: flex; align-items: center; justify-content: center; gap: 14px; }
+#p-rate { font-weight: 700; font-variant-numeric: tabular-nums; min-width: 52px; text-align: center; }
+#p-move-row { display: flex; align-items: center; justify-content: center; gap: 6px; }
+.btn.sm { min-height: 40px; padding: 0 10px; font-size: 13px; font-weight: 600; }
+#p-play { min-width: 108px; }
