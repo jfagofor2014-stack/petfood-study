@@ -34,6 +34,7 @@
 | `index.html` | アプリの外枠。タブ、各画面のコンテナ |
 | `css/style.css` | 全スタイル |
 | `js/app.js` | 起動、教材の有無で画面分岐、タブ切替 |
+| `js/lib/html.js` | HTML エスケープ。全画面で共有する |
 | `js/lib/sentences.js` | 文字列を文の配列に分割する純粋関数 |
 | `js/lib/schema.js` | 教材データの検証と正規化 |
 | `js/lib/book.js` | 章節の走査、節を読み上げ単位の配列に平坦化 |
@@ -2630,6 +2631,7 @@ MSG
 import { RATE_MIN, RATE_MAX, RATE_STEP } from '../lib/settings.js';
 import { summarize } from '../lib/schema.js';
 import { clearBook } from '../lib/db.js';
+import { escapeHtml as esc } from '../lib/html.js';
 
 export function renderSettings(root, ctx, nav) {
   const { book, settings, speech, progress } = ctx;
@@ -2750,9 +2752,6 @@ export function renderSettings(root, ctx, nav) {
   });
 }
 
-function esc(s) {
-  return String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-}
 ```
 
 - [ ] **Step 2: css/style.css の末尾に追記する**
@@ -2839,6 +2838,7 @@ MSG
 import { pickForSection, pickForChapter, pickWeak } from '../lib/quizpick.js';
 import { listSections, findSection } from '../lib/book.js';
 import { openPlayerAt } from './player.js';
+import { escapeHtml as esc } from '../lib/html.js';
 
 const KEY = 'pfs:quiz';
 const PER_SECTION = 5;
@@ -3007,9 +3007,6 @@ export function renderQuiz(root, ctx, nav) {
   }
 }
 
-function esc(s) {
-  return String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-}
 ```
 
 - [ ] **Step 2: css/style.css の末尾に追記する**
@@ -3210,6 +3207,7 @@ const ASSETS = [
   'js/app.js',
   'js/lib/book.js',
   'js/lib/db.js',
+  'js/lib/html.js',
   'js/lib/progress.js',
   'js/lib/quizpick.js',
   'js/lib/schema.js',
