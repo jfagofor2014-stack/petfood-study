@@ -119,6 +119,14 @@ test('img が空文字の figure を拒否する', () => {
   assert.ok(r.errors.some(e => e.includes('ch01-s01') && e.includes('figure')));
 });
 
+test('img が data:image/ で始まらない figure を拒否する（外部URL不可）', () => {
+  const d = validData();
+  d.chapters[0].sections[0].blocks[1] = { type: 'figure', img: 'https://example.com/beacon.png?u=1', caption: '図1', speak: '図1の説明。' };
+  const r = validateData(d);
+  assert.equal(r.ok, false);
+  assert.ok(r.errors.some(e => e.includes('ch01-s01') && e.includes('figure')));
+});
+
 test('blocks が空配列の節を引き続き受け入れる', () => {
   const d = validData();
   d.chapters[0].sections[0].blocks = [];

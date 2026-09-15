@@ -57,6 +57,11 @@ export function validateData(obj) {
         if (b.type === 'figure') {
           if (typeof b.img !== 'string' || b.img === '') {
             add(`${sec.id} の figure に img がありません。`);
+          } else if (!b.img.startsWith('data:image/')) {
+            // 教材ファイルは利用者間で受け渡される前提のため、外部URLを許すと
+            // 開いた際に外部へ通信が飛びうる（README は「ネットワークには
+            // 送信されない」と明記している）。埋め込み画像（data URI）のみ許可する。
+            add(`${sec.id} の figure の img が data:image/ 形式ではありません（外部URLは使えません）。`);
           }
           if (!b.speak && !b.caption) add(`${sec.id} の figure に speak も caption もありません。`);
         } else if (!Array.isArray(b.sents) || b.sents.length === 0) {
