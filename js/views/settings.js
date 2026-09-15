@@ -124,6 +124,7 @@ export function renderSettings(root, ctx, nav) {
       progress.importAll(isNewFormat ? data.progress : data);
       if (isNewFormat) quizResults.importAll(data.quiz);
       progress.pruneTo(book.chapters);
+      quizResults.pruneTo(book.questions || []);
       // await をまたいだので、その間にこの画面を離れていないか確認する。
       // 離れていれば root には既に別の描画が入っており、$('s-msg') は null になりうる。
       if (!alive) return;
@@ -153,5 +154,8 @@ export function renderSettings(root, ctx, nav) {
   // alive フラグで後始末する。
   return () => {
     alive = false;
+    // 「この声で試す」直後に別タブへ移った場合、読み上げを止めないと
+    // 鳴り続けてしまう（player.js の teardown と同じ理由）。
+    speech.cancel();
   };
 }
