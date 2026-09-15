@@ -41,6 +41,7 @@
 | `js/lib/progress.js` | 再生位置・節の読了状態・達成率 |
 | `js/lib/settings.js` | 設定値の既定と保存 |
 | `js/lib/quizpick.js` | 出題する問題を選ぶ |
+| `js/lib/quizresults.js` | テストの成績（挑戦回数・正答数）の保存と読み出し |
 | `js/lib/db.js` | IndexedDB への教材データの保存と読み出し |
 | `js/lib/speech.js` | `speechSynthesis` のラッパ。Android Chrome 対策をここに閉じ込める |
 | `js/lib/wakelock.js` | Wake Lock の取得と解放 |
@@ -2827,8 +2828,10 @@ MSG
 - Modify: `css/style.css`（末尾に追記）
 
 **Interfaces:**
-- Consumes: `quizpick.js` の `pickForSection`, `pickForChapter`, `pickWeak`；`book.js` の `listSections`, `findSection`；`player.js` の `openPlayerAt`
-- Produces: `renderQuiz(root, ctx, nav)`。成績は localStorage の `pfs:quiz` に `{ [questionId]: { attempts, correct, lastResult, lastAt } }` の形で持つ
+- Consumes: `quizpick.js` の `pickForSection`, `pickForChapter`, `pickWeak`；`book.js` の `listSections`, `findSection`；`player.js` の `openPlayerAt`；`quizresults.js` の `createQuizResults`
+- Produces: `renderQuiz(root, ctx, nav)`
+
+**成績の保管は `js/lib/quizresults.js` が持つ。** `js/views/` から `localStorage` を直接触らないのがこのプロジェクトの流儀で、storage は `js/lib/` が引数注入で受け取る（`progress.js` / `settings.js` と同じ）。これによりテストも書ける。
 
 - [ ] **Step 1: quiz ビューを書く**
 
@@ -2840,29 +2843,15 @@ import { listSections, findSection } from '../lib/book.js';
 import { openPlayerAt } from './player.js';
 import { escapeHtml as esc } from '../lib/html.js';
 
-const KEY = 'pfs:quiz';
 const PER_SECTION = 5;
 const PER_CHAPTER = 10;
 const PER_WEAK = 10;
 
-const readResults = () => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch { return {}; } };
-const writeResults = r => localStorage.setItem(KEY, JSON.stringify(r));
-
-function record(questionId, ok) {
-  const r = readResults();
-  const cur = r[questionId] || { attempts: 0, correct: 0 };
-  r[questionId] = {
-    attempts: cur.attempts + 1,
-    correct: cur.correct + (ok ? 1 : 0),
-    lastResult: ok,
-    lastAt: new Date().toISOString(),
-  };
-  writeResults(r);
-}
-
 export function renderQuiz(root, ctx, nav) {
-  const { book } = ctx;
+  const { book, quizResults } = ctx;
   const questions = book.questions || [];
+  const readResults = () => quizResults.all();
+  const record = (questionId, ok) => quizResults.record(questionId, ok);
 
   if (questions.length === 0) {
     root.innerHTML = `<div class="card">
@@ -3210,6 +3199,7 @@ const ASSETS = [
   'js/lib/html.js',
   'js/lib/progress.js',
   'js/lib/quizpick.js',
+  'js/lib/quizresults.js',
   'js/lib/schema.js',
   'js/lib/sentences.js',
   'js/lib/settings.js',
