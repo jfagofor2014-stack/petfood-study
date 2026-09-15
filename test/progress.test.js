@@ -140,3 +140,74 @@ test('書き出して読み込み直せる', () => {
   assert.equal(b.getSection('ch01-s01').state, 'done');
   assert.equal(b.getPosition().sectionId, 'ch01-s02');
 });
+
+// --- レビュー指摘の回帰テスト ---
+
+test('importAll: progress が文字列でも markDone は落ちず、状態は壊れない', () => {
+  const p = createProgress(fakeStorage());
+  p.importAll({ progress: '文字列' });
+  assert.doesNotThrow(() => p.markDone('ch01-s01'));
+  assert.equal(p.getSection('ch01-s01').state, 'done');
+});
+
+test('importAll: progress が配列でも状態は壊れない', () => {
+  const p = createProgress(fakeStorage());
+  p.markDone('ch01-s01');
+  p.importAll({ progress: [] });
+  assert.doesNotThrow(() => p.markDone('ch01-s02'));
+  // 元の記録が無効な配列で上書きされていないこと
+  assert.equal(p.getSection('ch01-s01').state, 'done');
+});
+
+test('importAll: 不正な position (sectionIdが数値) を渡しても getPosition は破綻しない', () => {
+  const p = createProgress(fakeStorage());
+  p.setPosition('ch01-s01', 2);
+  p.importAll({ position: { sectionId: 123, sentIndex: 1 } });
+  assert.doesNotThrow(() => p.getPosition());
+  // 不正な値は書き込まれず、既存の位置が保たれる
+  const pos = p.getPosition();
+  assert.equal(pos.sectionId, 'ch01-s01');
+});
+
+test('importAll: 不正な position (sentIndexが文字列) を渡しても getPosition は破綻しない', () => {
+  const p = createProgress(fakeStorage());
+  p.importAll({ position: { sectionId: 'ch01-s01', sentIndex: 'あ' } });
+  assert.doesNotThrow(() => p.getPosition());
+  assert.equal(p.getPosition(), null);
+});
+
+test('pruneTo: 分割代入で取り出しても this に依存せず動く', () => {
+  const p = createProgress(fakeStorage());
+  p.markDone('ch01-s01');
+  const { pruneTo } = p;
+  assert.doesNotThrow(() => pruneTo(chapters));
+  assert.equal(p.getSection('ch01-s01').state, 'done');
+});
+
+test('pruneTo([]) は進捗も位置も消さない', () => {
+  const p = createProgress(fakeStorage());
+  p.markDone('ch01-s01');
+  p.setPosition('ch01-s01', 2);
+  const kept = p.pruneTo([]);
+  assert.equal(kept, 1);
+  assert.equal(p.getSection('ch01-s01').state, 'done');
+  assert.ok(p.getPosition());
+  assert.equal(p.getPosition().sectionId, 'ch01-s01');
+});
+
+test('pruneTo(null) は進捗も位置も消さない', () => {
+  const p = createProgress(fakeStorage());
+  p.markDone('ch01-s01');
+  p.setPosition('ch01-s01', 2);
+  const kept = p.pruneTo(null);
+  assert.equal(kept, 1);
+  assert.equal(p.getSection('ch01-s01').state, 'done');
+  assert.ok(p.getPosition());
+});
+
+test('壊れた個別レコード(文字列)は getSection が UNREAD を返す', () => {
+  const p = createProgress(fakeStorage({
+    'pfs:progress': JSON.stringify({ 'ch01-s01': '壊れている' }),
+  }));
+  assert.deepEqual(p.getSection('ch01-s01'), { state: 'unread', maxSent: 0, doneAt: null });
+});

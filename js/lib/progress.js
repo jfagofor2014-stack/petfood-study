@@ -24,12 +24,34 @@ function writeJSON(storage, key, value) {
 
 const UNREAD = () => ({ state: 'unread', maxSent: 0, doneAt: null });
 
+// null でも配列でもない「プレーンオブジェクト」だけを true とする。
+const isPlainObject = v => typeof v === 'object' && v !== null && !Array.isArray(v);
+
+const VALID_STATES = new Set(['unread', 'reading', 'done']);
+
+// 節ごとの読了レコードとして妥当な形かを検査する。
+const isValidSectionRecord = rec =>
+  isPlainObject(rec) && VALID_STATES.has(rec.state) && Number.isInteger(rec.maxSent);
+
+// 再生位置として妥当な形かを検査する。
+const isValidPosition = pos =>
+  isPlainObject(pos) && typeof pos.sectionId === 'string' && Number.isInteger(pos.sentIndex);
+
 export function createProgress(storage) {
   const allProgress = () => readJSON(storage, K_PROG, {});
 
   const getSection = sectionId => {
     const rec = allProgress()[sectionId];
-    return rec ? { state: rec.state, maxSent: rec.maxSent, doneAt: rec.doneAt ?? null } : UNREAD();
+    return isValidSectionRecord(rec) ? { state: rec.state, maxSent: rec.maxSent, doneAt: rec.doneAt ?? null } : UNREAD();
+  };
+
+  const getPosition = () => {
+    const p = readJSON(storage, K_POS, null);
+    return isValidPosition(p) ? p : null;
+  };
+
+  const clearPosition = () => {
+    storage.removeItem(K_POS);
   };
 
   const putSection = (sectionId, rec) => {
@@ -45,19 +67,13 @@ export function createProgress(storage) {
   };
 
   return {
-    getPosition() {
-      const p = readJSON(storage, K_POS, null);
-      if (!p || typeof p.sectionId !== 'string' || !Number.isInteger(p.sentIndex)) return null;
-      return p;
-    },
+    getPosition,
 
     setPosition(sectionId, sentIndex) {
       writeJSON(storage, K_POS, { sectionId, sentIndex, updatedAt: new Date().toISOString() });
     },
 
-    clearPosition() {
-      storage.removeItem(K_POS);
-    },
+    clearPosition,
 
     getSection,
 
@@ -99,8 +115,13 @@ export function createProgress(storage) {
     },
 
     pruneTo(chapters) {
-      const valid = new Set(listSections(chapters).map(x => x.section.id));
+      const sections = listSections(chapters);
       const all = allProgress();
+      // 教材の読み込みが失敗・遅延して節が0件のときは、
+      // 既存の進捗・位置を消さずに現状の件数だけ返す。
+      if (sections.length === 0) return Object.keys(all).length;
+
+      const valid = new Set(sections.map(x => x.section.id));
       let kept = 0;
       const next = {};
       for (const [id, rec] of Object.entries(all)) {
@@ -108,8 +129,8 @@ export function createProgress(storage) {
       }
       writeJSON(storage, K_PROG, next);
 
-      const pos = this.getPosition();
-      if (pos && !valid.has(pos.sectionId)) this.clearPosition();
+      const pos = getPosition();
+      if (pos && !valid.has(pos.sectionId)) clearPosition();
       return kept;
     },
 
@@ -123,9 +144,10 @@ export function createProgress(storage) {
     },
 
     importAll(obj) {
-      if (!obj || typeof obj !== 'object') return;
-      if (obj.position) writeJSON(storage, K_POS, obj.position);
-      if (obj.progress) writeJSON(storage, K_PROG, obj.progress);
+      if (!isPlainObject(obj)) return;
+      // 形が妥当なものだけ書き込む。満たさなければ黙って無視し、既存値を保つ。
+      if (isValidPosition(obj.position)) writeJSON(storage, K_POS, obj.position);
+      if (isPlainObject(obj.progress)) writeJSON(storage, K_PROG, obj.progress);
     },
   };
 }
