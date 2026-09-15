@@ -1,3 +1,7 @@
 node_modules/
 .DS_Store
+
+# 教材データは著作物のため絶対にコミットしない
+*-data.json
+petfood-data*.json
 tools/_work/
