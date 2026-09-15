@@ -1,0 +1,79 @@
+:root {
+  --bg: #f7f6f2;
+  --surface: #ffffff;
+  --ink: #1d2320;
+  --muted: #6b7570;
+  --line: #e2e0d8;
+  --accent: #2f6f4e;
+  --accent-ink: #ffffff;
+  --warn: #b3452f;
+  --tabh: 60px;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 16px/1.75 system-ui, -apple-system, "Noto Sans JP", sans-serif;
+  -webkit-text-size-adjust: 100%;
+}
+
+.screen[hidden] { display: none; }
+
+#topbar {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px 16px;
+  background: var(--accent); color: var(--accent-ink);
+}
+#topbar-title { font-weight: 700; font-size: 15px; }
+#topbar-rate { font-size: 13px; opacity: .9; font-variant-numeric: tabular-nums; }
+
+#view { padding: 16px 16px calc(var(--tabh) + 24px); }
+
+#tabs {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  height: var(--tabh);
+  background: var(--surface); border-top: 1px solid var(--line);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.tab {
+  border: 0; background: none; color: var(--muted);
+  font: inherit; font-size: 13px; font-weight: 600;
+  cursor: pointer;
+}
+.tab[aria-current="true"] { color: var(--accent); }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 48px; padding: 0 20px;
+  border: 1px solid var(--accent); border-radius: 10px;
+  background: var(--accent); color: var(--accent-ink);
+  font: inherit; font-weight: 700; cursor: pointer;
+}
+.btn.ghost { background: var(--surface); color: var(--accent); }
+.btn.danger { background: var(--surface); border-color: var(--warn); color: var(--warn); }
+.btn:disabled { opacity: .45; cursor: default; }
+
+.muted { color: var(--muted); font-size: 14px; }
+.error { color: var(--warn); font-size: 14px; }
+
+.bar { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.bar > i { display: block; height: 100%; background: var(--accent); }
+
+/* オンボーディング */
+#onboarding { padding: 32px 20px; max-width: 560px; margin: 0 auto; }
+#onboarding h1 { font-size: 20px; margin: 0 0 8px; }
+#onboarding ol { padding-left: 1.2em; color: var(--muted); font-size: 14px; }
