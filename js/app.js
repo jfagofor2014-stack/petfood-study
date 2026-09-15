@@ -7,6 +7,7 @@ import { createWakeLock } from './lib/wakelock.js';
 import { renderOnboarding } from './views/onboarding.js';
 import { renderPlayer } from './views/player.js';
 import { renderToc } from './views/toc.js';
+import { renderQuiz } from './views/quiz.js';
 import { renderSettings } from './views/settings.js';
 
 const el = {
@@ -30,7 +31,7 @@ const ctx = {
 // 画面モジュールは後続タスクで実装する。未実装のタブは案内だけ出す。
 // 後続タスクはこのオブジェクトに直接キーを足していく（registerView のような
 // 登録用エクスポートは、呼び出し元が存在しないため作らない）。
-const views = { player: renderPlayer, toc: renderToc, settings: renderSettings };
+const views = { player: renderPlayer, toc: renderToc, quiz: renderQuiz, settings: renderSettings };
 
 let teardown = null;
 

@@ -154,3 +154,30 @@ select { width: 100%; min-height: 48px; padding: 0 10px; font: inherit;
 .s-check input { width: 22px; height: 22px; accent-color: var(--accent); }
 
 .s-btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+
+/* テスト */
+.q-note { font-size: 13px; color: var(--warn); }
+.q-text { font-weight: 700; margin-top: 6px; }
+
+#q-choices { display: grid; gap: 8px; margin-bottom: 12px; }
+.q-choice {
+  text-align: left; padding: 14px 16px; min-height: 56px;
+  border: 1px solid var(--line); border-radius: 10px;
+  background: var(--surface); color: var(--ink); font: inherit; cursor: pointer;
+}
+.q-choice:disabled { cursor: default; opacity: 1; }
+.q-choice.is-right { border-color: var(--accent); background: #e8f3ec; font-weight: 700; }
+.q-choice.is-wrong { border-color: var(--warn); background: #fbeae6; }
+
+.q-verdict { font-weight: 700; }
+.q-verdict.is-right { color: var(--accent); }
+.q-verdict.is-wrong { color: var(--warn); }
+.q-score { font-size: 22px; font-weight: 700; }
+
+.q-pick {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  width: 100%; text-align: left; padding: 14px 0; min-height: 52px;
+  border: 0; border-bottom: 1px solid var(--line);
+  background: none; color: var(--ink); font: inherit; cursor: pointer;
+}
+.q-pick:last-child { border-bottom: 0; }
