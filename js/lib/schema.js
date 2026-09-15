@@ -32,6 +32,10 @@ export function validateData(obj) {
 
   for (const ch of chapters) {
     if (!isObj(ch) || !ch.id) { add('章に id がありません。'); continue; }
+    // no・title を検証しないと、取り込み後に「第undefined章 undefined」のような
+    // 表示になりうる。
+    if (!Number.isInteger(ch.no)) add(`${ch.id} の no が整数ではありません。`);
+    if (typeof ch.title !== 'string' || ch.title === '') add(`${ch.id} の title が空です。`);
     if (!Array.isArray(ch.sections) || ch.sections.length === 0) {
       add(`${ch.id} に節がありません。`);
       continue;
@@ -41,6 +45,8 @@ export function validateData(obj) {
       if (sectionIds.has(sec.id)) add(`節IDが重複しています: ${sec.id}`);
       sectionIds.add(sec.id);
       sectionChapterNo.set(sec.id, ch.no);
+      if (!Number.isInteger(sec.no)) add(`${sec.id} の no が整数ではありません。`);
+      if (typeof sec.title !== 'string' || sec.title === '') add(`${sec.id} の title が空です。`);
 
       if (!Array.isArray(sec.blocks)) { add(`${sec.id} に blocks がありません。`); continue; }
       for (const b of sec.blocks) {
@@ -63,7 +69,13 @@ export function validateData(obj) {
   const questions = Array.isArray(obj.questions) ? obj.questions : [];
   for (const q of questions) {
     if (!isObj(q) || !q.id) { add('問題に id がありません。'); continue; }
+    if (typeof q.question !== 'string' || q.question === '') add(`${q.id} の question が空です。`);
+    if (typeof q.explanation !== 'string') add(`${q.id} の explanation が文字列ではありません。`);
+    if (!Number.isInteger(q.page)) add(`${q.id} の page が整数ではありません。`);
     if (!Array.isArray(q.choices) || q.choices.length < 2) { add(`${q.id} の選択肢が足りません。`); continue; }
+    if (q.choices.some(c => typeof c !== 'string' || c === '')) {
+      add(`${q.id} の選択肢に空でない文字列でないものがあります。`);
+    }
     if (!Number.isInteger(q.answer) || q.answer < 0 || q.answer >= q.choices.length) {
       add(`${q.id} の answer が選択肢の範囲外です。`);
     }

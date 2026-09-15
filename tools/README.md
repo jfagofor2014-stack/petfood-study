@@ -80,7 +80,11 @@ OCR は完全ではない。`tools/_work/png/pg-NNN.png` を目で見ながら
 ```json
 [
   { "id": "q01", "sectionId": "ch01-s01", "chapterNo": 1,
-    "choices": ["a", "b", "c"], "answer": 0 }
+    "question": "この節の内容として正しいものはどれか。",
+    "choices": ["選択肢A", "選択肢B", "選択肢C", "選択肢D"],
+    "answer": 0,
+    "explanation": "選択肢Aが正しい（サンプルの解説文）。",
+    "page": 4 }
 ]
 ```
 

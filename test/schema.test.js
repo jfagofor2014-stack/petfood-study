@@ -55,6 +55,38 @@ test('節IDが重複していると拒否する', () => {
   assert.ok(r.errors.some(e => e.includes('重複')));
 });
 
+test('章の no が整数でないと拒否する', () => {
+  const d = validData();
+  d.chapters[0].no = '1';
+  const r = validateData(d);
+  assert.equal(r.ok, false);
+  assert.ok(r.errors.some(e => e.includes('ch01') && e.includes('no')));
+});
+
+test('章の title が空だと拒否する', () => {
+  const d = validData();
+  d.chapters[0].title = '';
+  const r = validateData(d);
+  assert.equal(r.ok, false);
+  assert.ok(r.errors.some(e => e.includes('ch01') && e.includes('title')));
+});
+
+test('節の no が整数でないと拒否する', () => {
+  const d = validData();
+  d.chapters[0].sections[0].no = null;
+  const r = validateData(d);
+  assert.equal(r.ok, false);
+  assert.ok(r.errors.some(e => e.includes('ch01-s01') && e.includes('no')));
+});
+
+test('節の title が空だと拒否する', () => {
+  const d = validData();
+  d.chapters[0].sections[0].title = '';
+  const r = validateData(d);
+  assert.equal(r.ok, false);
+  assert.ok(r.errors.some(e => e.includes('ch01-s01') && e.includes('title')));
+});
+
 test('未知のブロック種別を拒否する', () => {
   const d = validData();
   d.chapters[0].sections[0].blocks.push({ type: 'unknown', sents: ['x'] });
@@ -137,6 +169,42 @@ test('chapterNo が節の所属章と食い違う問題を拒否する', () => {
   const r = validateData(d);
   assert.equal(r.ok, false);
   assert.ok(r.errors.some(e => e.includes('q1')));
+});
+
+test('問題の question が空だと拒否する', () => {
+  const d = validData();
+  d.questions = [{ id: 'q1', sectionId: 'ch01-s01', chapterNo: 1, type: 'choice4',
+    question: '', choices: ['a', 'b', 'c', 'd'], answer: 0, explanation: '解説', page: 4 }];
+  const r = validateData(d);
+  assert.equal(r.ok, false);
+  assert.ok(r.errors.some(e => e.includes('q1') && e.includes('question')));
+});
+
+test('問題の explanation が文字列でないと拒否する', () => {
+  const d = validData();
+  d.questions = [{ id: 'q1', sectionId: 'ch01-s01', chapterNo: 1, type: 'choice4',
+    question: '問', choices: ['a', 'b', 'c', 'd'], answer: 0, explanation: 123, page: 4 }];
+  const r = validateData(d);
+  assert.equal(r.ok, false);
+  assert.ok(r.errors.some(e => e.includes('q1') && e.includes('explanation')));
+});
+
+test('問題の page が整数でないと拒否する', () => {
+  const d = validData();
+  d.questions = [{ id: 'q1', sectionId: 'ch01-s01', chapterNo: 1, type: 'choice4',
+    question: '問', choices: ['a', 'b', 'c', 'd'], answer: 0, explanation: '解説', page: '4' }];
+  const r = validateData(d);
+  assert.equal(r.ok, false);
+  assert.ok(r.errors.some(e => e.includes('q1') && e.includes('page')));
+});
+
+test('問題の選択肢に空文字列が含まれると拒否する', () => {
+  const d = validData();
+  d.questions = [{ id: 'q1', sectionId: 'ch01-s01', chapterNo: 1, type: 'choice4',
+    question: '問', choices: ['a', '', 'c', 'd'], answer: 0, explanation: '解説', page: 4 }];
+  const r = validateData(d);
+  assert.equal(r.ok, false);
+  assert.ok(r.errors.some(e => e.includes('q1') && e.includes('選択肢')));
 });
 
 test('エラーは最大10件までにまとめる', () => {

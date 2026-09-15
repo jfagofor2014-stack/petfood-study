@@ -216,10 +216,24 @@ def validate_questions(questions, section_chapter_no: dict) -> list[str]:
             errors.append(f"questions.json: 問題IDが重複しています: {qid}")
         seen_ids.add(qid)
 
+        question = q.get("question")
+        if not isinstance(question, str) or question == "":
+            errors.append(f"questions.json: {qid} の question が空です。")
+
+        explanation = q.get("explanation")
+        if not isinstance(explanation, str):
+            errors.append(f"questions.json: {qid} の explanation が文字列ではありません。")
+
+        page = q.get("page")
+        if not isinstance(page, int) or isinstance(page, bool):
+            errors.append(f"questions.json: {qid} の page が整数ではありません。")
+
         choices = q.get("choices")
         if not isinstance(choices, list) or len(choices) < 2:
             errors.append(f"questions.json: {qid} の選択肢が2つ未満です。")
             choices = []
+        elif any(not isinstance(c, str) or c == "" for c in choices):
+            errors.append(f"questions.json: {qid} の選択肢に空でない文字列でないものがあります。")
 
         answer = q.get("answer")
         if not isinstance(answer, int) or isinstance(answer, bool) or not (0 <= answer < len(choices)):
