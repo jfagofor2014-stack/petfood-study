@@ -17,6 +17,7 @@ function fakeSynth(voices = []) {
     cancel() { s.cancelled++; const u = s._pending; s._pending = null; if (u && u.onend) u.onend(); },
     getVoices() { return s._voices; },
     addEventListener(name, fn) { s._listeners[name] = fn; },
+    removeEventListener(name, fn) { if (s._listeners[name] === fn) delete s._listeners[name]; },
     finish() { const u = s._pending; s._pending = null; if (u && u.onend) u.onend(); },
     fail(msg) { const u = s._pending; s._pending = null; if (u && u.onerror) u.onerror({ error: msg }); },
     emitVoicesChanged(v) { s._voices = v; if (s._listeners.voiceschanged) s._listeners.voiceschanged(); },
@@ -118,4 +119,45 @@ test('指定した声を utterance に載せる', async () => {
   assert.equal(synth.spoken[0].voice, voice);
   synth.finish();
   await p;
+});
+
+test('unlock は synth.speak を1回呼ぶ', () => {
+  const synth = fakeSynth();
+  const sp = make(synth);
+  sp.unlock();
+  assert.equal(synth.spoken.length, 1);
+});
+
+test('unlock の utterance は lang=ja-JP, volume=0', () => {
+  const synth = fakeSynth();
+  const sp = make(synth);
+  sp.unlock();
+  assert.equal(synth.spoken[0].lang, 'ja-JP');
+  assert.equal(synth.spoken[0].volume, 0);
+});
+
+test('unlock は speak() の Promise を進行中のまま保つ', async () => {
+  const synth = fakeSynth();
+  const sp = make(synth);
+  const p = sp.speak('文。', {});
+  sp.unlock();
+  // unlock() は synth.speak を呼ぶだけで、前の speak() に影響しないことを確認
+  assert.equal(synth.spoken.length, 2); // speak + unlock
+  // 最初の utterance に onend を呼んで p が解決することを確認
+  const firstUtterance = synth.spoken[0];
+  if (firstUtterance.onend) firstUtterance.onend();
+  assert.equal(await p, 'done');
+});
+
+test('japaneseVoices は voiceschanged リスナーを削除する', async () => {
+  const synth = fakeSynth([]);
+  const sp = make(synth);
+  const p = sp.japaneseVoices();
+  // voiceschanged が登録されている状態を確認
+  assert.ok(synth._listeners.voiceschanged);
+  // リスナーを呼んで解決
+  synth.emitVoicesChanged([{ voiceURI: 'b', lang: 'ja-JP', name: '日本語' }]);
+  await p;
+  // 解決後、リスナーが外されていることを確認
+  assert.equal(synth._listeners.voiceschanged, undefined);
 });

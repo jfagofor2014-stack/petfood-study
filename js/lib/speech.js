@@ -61,6 +61,10 @@ export function createSpeech({ synth, UtteranceCtor }) {
             if (done) return;
             done = true;
             clearTimeout(timer);
+            // リスナーを削除して漏れを防ぐ
+            if (typeof synth.removeEventListener === 'function') {
+              synth.removeEventListener('voiceschanged', finish);
+            }
             resolve(synth.getVoices() || []);
           };
           synth.addEventListener('voiceschanged', finish);
