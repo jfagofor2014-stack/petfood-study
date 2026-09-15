@@ -29,6 +29,9 @@ export function renderPlayer(root, ctx, nav) {
     ? saved.sectionId
     : firstSectionId(book.chapters);
   let index = saved && saved.sectionId === sectionId ? saved.sentIndex : 0;
+  // 既に壊れた値（節の文数を超える index）が保存されている利用者を救済するため、
+  // 復元時点でその節の文数に収まるよう丸める。
+  index = clampSentIndex(index, utterances().length);
   let playing = false;
   let token = 0;          // 再生ループの世代。停止・移動のたびに増やす
   let voices = [];
@@ -49,12 +52,13 @@ export function renderPlayer(root, ctx, nav) {
         <button class="btn ghost sm" id="p-faster">速く</button>
       </div>
       <div id="p-move-row">
-        <button class="btn ghost sm" id="p-prev-sec">前の節</button>
+        <button class="btn ghost sm" id="p-prev-sec">前節</button>
         <button class="btn ghost sm" id="p-back">◀ 1文</button>
         <button class="btn" id="p-play">再生</button>
         <button class="btn ghost sm" id="p-fwd">1文 ▶</button>
-        <button class="btn ghost sm" id="p-next-sec">次の節</button>
+        <button class="btn ghost sm" id="p-next-sec">次節</button>
       </div>
+      <div class="error" id="p-err" hidden></div>
     </div>
   `;
 
@@ -83,6 +87,9 @@ export function renderPlayer(root, ctx, nav) {
     $('p-rate').textContent = `${settings.get().rate.toFixed(1)}倍`;
     document.getElementById('topbar-rate').textContent = `${settings.get().rate.toFixed(1)}倍`;
     $('p-play').textContent = playing ? '一時停止' : '再生';
+    // 最初/最後の節では、押しても無反応にならないようボタン自体を無効化する。
+    $('p-prev-sec').disabled = !neighborSection(book.chapters, sectionId, -1);
+    $('p-next-sec').disabled = !neighborSection(book.chapters, sectionId, 1);
   }
 
   function drawBody() {
@@ -90,7 +97,7 @@ export function renderPlayer(root, ctx, nav) {
     body.innerHTML = us.map(u => {
       if (u.type === 'figure') {
         return `<figure class="p-fig" data-i="${u.i}">
-          <img src="${u.img}" alt="${escapeHtml(u.caption || '図')}">
+          <img src="${escapeHtml(u.img)}" alt="${escapeHtml(u.caption || '図')}">
           <figcaption>${escapeHtml(u.caption || '')}</figcaption>
         </figure>`;
       }
@@ -112,6 +119,24 @@ export function renderPlayer(root, ctx, nav) {
     return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   }
 
+  // index を 0 以上 (文数-1) 以下（文数が0なら0）に丸める。
+  // 節末（index === us.length）のような範囲外の値を保存・表示しないための共通処理。
+  function clampSentIndex(i, len) {
+    return Math.max(0, Math.min(i, Math.max(0, len - 1)));
+  }
+
+  function showError(msg) {
+    const el = $('p-err');
+    el.textContent = msg;
+    el.hidden = false;
+  }
+
+  function hideError() {
+    const el = $('p-err');
+    el.hidden = true;
+    el.textContent = '';
+  }
+
   // ---- 再生ループ ----------------------------------------------------
   async function loop(myToken) {
     const cfg = settings.get();
@@ -126,6 +151,9 @@ export function renderPlayer(root, ctx, nav) {
         sectionId = next.section.id;
         index = 0;
         drawHead(); drawBody();
+        // 空の節（blocks: []）が連続すると await を挟まず同期的に回り続けてしまうため、
+        // 節をまたぐたびに1ティック譲ってメインスレッドを占有しないようにする。
+        await sleep(0);
         continue;
       }
 
@@ -134,6 +162,9 @@ export function renderPlayer(root, ctx, nav) {
       try {
         result = await speech.speak(u.text, { rate: cfg.rate, voice });
       } catch {
+        if (myToken === token) {
+          showError('読み上げができませんでした。端末の音声設定をご確認ください。');
+        }
         stop();                       // 読み上げが失敗したら止めて位置は保つ
         break;
       }
@@ -155,6 +186,7 @@ export function renderPlayer(root, ctx, nav) {
     playing = true;
     token += 1;
     if (settings.get().keepAwake) wakeLock.enable();
+    hideError();          // 前回の読み上げ失敗メッセージが残っていたら消す
     drawHead();
     loop(token);
   }
@@ -164,6 +196,9 @@ export function renderPlayer(root, ctx, nav) {
     token += 1;
     speech.cancel();
     wakeLock.disable();
+    // 節末（index === us.length）のような範囲外の値を保存しない。
+    // 丸めた値を index 自体にも反映し、表示（p-count）と保存内容を一致させる。
+    index = clampSentIndex(index, utterances().length);
     progress.setPosition(sectionId, index);
     drawHead();
   }

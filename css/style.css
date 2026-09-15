@@ -108,6 +108,8 @@ body {
 }
 #p-rate-row { display: flex; align-items: center; justify-content: center; gap: 14px; }
 #p-rate { font-weight: 700; font-variant-numeric: tabular-nums; min-width: 52px; text-align: center; }
-#p-move-row { display: flex; align-items: center; justify-content: center; gap: 6px; }
-.btn.sm { min-height: 40px; padding: 0 10px; font-size: 13px; font-weight: 600; }
-#p-play { min-width: 108px; }
+/* 412px幅（Pixel 8a）でボタン5個が折り返さず1行に収まるよう、gap・padding・
+   #p-play の幅を詰めている。タップ領域は min-height 40px 以上を維持。 */
+#p-move-row { display: flex; align-items: center; justify-content: center; gap: 4px; flex-wrap: nowrap; }
+.btn.sm { min-height: 40px; padding: 0 7px; font-size: 13px; font-weight: 600; }
+#p-play { padding: 0 12px; font-size: 14px; }
