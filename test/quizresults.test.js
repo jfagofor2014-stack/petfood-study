@@ -123,3 +123,51 @@ test('pruneTo(null) は何も消さない', () => {
   assert.equal(kept, 1);
   assert.equal(r.get('q01').attempts, 1);
 });
+
+test('exportAll() で書き出した内容を別インスタンスの importAll() に渡すと成績が復元される', () => {
+  const r1 = createQuizResults(fakeStorage());
+  r1.record('q01', true);
+  r1.record('q02', false);
+  const dump = r1.exportAll();
+
+  const r2 = createQuizResults(fakeStorage());
+  r2.importAll(dump);
+
+  assert.equal(r2.get('q01').attempts, 1);
+  assert.equal(r2.get('q01').correct, 1);
+  assert.equal(r2.get('q02').attempts, 1);
+  assert.equal(r2.get('q02').correct, 0);
+});
+
+test('importAll(null) は既存の成績を壊さない', () => {
+  const r = createQuizResults(fakeStorage());
+  r.record('q01', true);
+  r.importAll(null);
+  assert.equal(r.get('q01').attempts, 1);
+  assert.equal(r.get('q01').correct, 1);
+});
+
+test("importAll('文字列') は既存の成績を壊さない", () => {
+  const r = createQuizResults(fakeStorage());
+  r.record('q01', true);
+  r.importAll('文字列');
+  assert.equal(r.get('q01').attempts, 1);
+  assert.equal(r.get('q01').correct, 1);
+});
+
+test('importAll([]) は既存の成績を壊さない', () => {
+  const r = createQuizResults(fakeStorage());
+  r.record('q01', true);
+  r.importAll([]);
+  assert.equal(r.get('q01').attempts, 1);
+  assert.equal(r.get('q01').correct, 1);
+});
+
+test('importAll のあと record が正常に動く', () => {
+  const r = createQuizResults(fakeStorage());
+  r.importAll({ q01: { attempts: 2, correct: 1, lastResult: false, lastAt: '2024-01-01T00:00:00.000Z' } });
+  const rec = r.record('q01', true);
+  assert.equal(rec.attempts, 3);
+  assert.equal(rec.correct, 2);
+  assert.equal(rec.lastResult, true);
+});

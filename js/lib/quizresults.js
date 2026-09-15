@@ -75,6 +75,19 @@ export function createQuizResults(storage) {
       storage.removeItem(K_QUIZ);
     },
 
+    // 全成績を素のオブジェクトで返す（書き出し用）。
+    exportAll() {
+      return allResults();
+    },
+
+    // 書き出された成績を取り込む（読み込み用）。
+    // プレーンオブジェクトでなければ何も書かず、既存の成績を保つ。
+    // 個々のレコードの妥当性は get() 側の isValidRecord が読み出し時に検査する。
+    importAll(obj) {
+      if (!isPlainObject(obj)) return;
+      writeJSON(storage, K_QUIZ, obj);
+    },
+
     pruneTo(questions) {
       const all = allResults();
       // 教材の読み込みが失敗・遅延して問題が0件のときは、

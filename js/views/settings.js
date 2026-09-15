@@ -3,14 +3,17 @@ import { summarize } from '../lib/schema.js';
 import { clearBook } from '../lib/db.js';
 import { escapeHtml as esc } from '../lib/html.js';
 
+// null でも配列でもない「プレーンオブジェクト」だけを true とする。
+const isPlainObject = v => typeof v === 'object' && v !== null && !Array.isArray(v);
+
 export function renderSettings(root, ctx, nav) {
   const { book, settings, speech, progress, quizResults } = ctx;
   const cfg = settings.get();
   const info = summarize(book);
 
-  // japaneseVoices() は Promise。設定タブを離れたあとや、何度も出入りしたあとに
-  // 古い Promise が解決すると、その時点で root の中身は別の描画に入れ替わっている
-  // 可能性がある。teardown で false にして、その後の .then 内の処理を止める。
+  // japaneseVoices() や f.text() は Promise。設定タブを離れたあとや、何度も出入り
+  // したあとに await の続きが動くと、その時点で root の中身は別の描画に入れ替わって
+  // いる可能性がある。teardown で false にして、await より後の DOM アクセスを止める。
   let alive = true;
 
   root.innerHTML = `
@@ -96,7 +99,10 @@ export function renderSettings(root, ctx, nav) {
   });
 
   $('s-export').addEventListener('click', () => {
-    const blob = new Blob([JSON.stringify(progress.exportAll(), null, 1)], { type: 'application/json' });
+    // 進捗とテスト成績の両方を書き出す。片方だけ復元すると
+    // 「進捗をリセット」で両方消える挙動と食い違ってしまうため。
+    const data = { progress: progress.exportAll(), quiz: quizResults.exportAll() };
+    const blob = new Blob([JSON.stringify(data, null, 1)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = `petfood-progress-${new Date().toISOString().slice(0, 10)}.json`;
@@ -111,10 +117,19 @@ export function renderSettings(root, ctx, nav) {
     const f = e.target.files && e.target.files[0];
     if (!f) return;
     try {
-      progress.importAll(JSON.parse(await f.text()));
+      const data = JSON.parse(await f.text());
+      // 後方互換: 旧形式（progress.exportAll() をそのまま書き出したファイル）は
+      // 直下に position を持つ。新形式は progress キーの下にそれが入っている。
+      const isNewFormat = isPlainObject(data) && 'progress' in data && !('position' in data);
+      progress.importAll(isNewFormat ? data.progress : data);
+      if (isNewFormat) quizResults.importAll(data.quiz);
       progress.pruneTo(book.chapters);
+      // await をまたいだので、その間にこの画面を離れていないか確認する。
+      // 離れていれば root には既に別の描画が入っており、$('s-msg') は null になりうる。
+      if (!alive) return;
       $('s-msg').textContent = '学習データを読み込みました。';
     } catch {
+      if (!alive) return;
       $('s-msg').textContent = '読み込めませんでした。';
     }
   });
@@ -133,8 +148,9 @@ export function renderSettings(root, ctx, nav) {
   });
 
   // この画面が登録するリスナーは全て root 配下の要素に直接付いているので
-  // innerHTML = '' で一緒に捨てられるが、japaneseVoices() の Promise は
-  // 画面を離れたあとも生き続けるため、alive フラグで後始末する。
+  // innerHTML = '' で一緒に捨てられるが、japaneseVoices() の Promise と
+  // 学習データ読み込み（f.text() の await）は画面を離れたあとも生き続けるため、
+  // alive フラグで後始末する。
   return () => {
     alive = false;
   };
