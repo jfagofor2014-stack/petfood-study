@@ -7,3 +7,10 @@ __pycache__/
 *-data.json
 petfood-data*.json
 tools/_work/
+
+# 教材の原本と OCR 生成物（著作物）
+*.pdf
+tools/png/
+tools/pages/
+/png/
+/pages/

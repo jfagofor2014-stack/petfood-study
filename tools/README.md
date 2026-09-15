@@ -18,12 +18,18 @@ tools/_work/venv/bin/pip install -r tools/requirements.txt
 
 ### 1. OCR
 
+**PDF はリポジトリの外に置くこと。** リポジトリ内（`tools/` 配下やリポジトリ直下）に
+置くと、`git add -A` 等で誤ってコミットしてしまう危険がある。`~/Downloads/` など、
+リポジトリの外のディレクトリに置いてから指定する。
+
 ```bash
-tools/_work/venv/bin/python tools/ocr.py テキスト.pdf tools/_work
+tools/_work/venv/bin/python tools/ocr.py ~/Downloads/テキスト.pdf tools/_work
 ```
 
 `tools/_work/png/` にページ画像、`tools/_work/pages/` にOCRテキストができる。
 `pdftoppm` が見つからない場合や PDF が存在しない場合はその場でエラーになる。
+出力先も `tools/_work` 以外（特にリポジトリ内の無視されていない場所）を指定しないこと。
+`tools/_work` 以外を指定すると `ocr.py` が警告を出す。
 
 ### 2. 校正
 

@@ -29,6 +29,19 @@ def check_pdftoppm() -> None:
         )
 
 
+def warn_if_output_untracked(out: str) -> None:
+    """出力先が tools/_work 以外（＝ .gitignore で無視されない可能性がある場所）の
+    ときに、標準エラーへ日本語で警告する。処理は止めない。"""
+    normalized = os.path.normpath(out)
+    if normalized != "tools/_work" and not normalized.startswith("tools/_work" + os.sep):
+        print(
+            f"警告: 出力先 '{out}' は tools/_work 配下ではありません。\n"
+            "  OCR生成物（PNG画像・OCRテキスト）がリポジトリの追跡対象に\n"
+            "  入ってしまう可能性があります。出力先には tools/_work を指定することを推奨します。",
+            file=sys.stderr,
+        )
+
+
 def render(pdf: str, out: str) -> None:
     if not os.path.exists(pdf):
         sys.exit(f"エラー: PDFが見つかりません: {pdf}")
@@ -70,6 +83,7 @@ def main() -> None:
     check_pdftoppm()
 
     pdf, out = sys.argv[1], sys.argv[2]
+    warn_if_output_untracked(out)
     render(pdf, out)
 
     png_dir = os.path.join(out, "png")
