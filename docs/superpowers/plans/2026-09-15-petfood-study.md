@@ -202,7 +202,7 @@ export function splitSentences(text) {
 - [ ] **Step 5: テストを実行して成功を確認する**
 
 Run: `cd /Users/taichi/petfood-study && npm test`
-Expected: PASS。12 tests passing
+Expected: PASS。追加したテストが全て通ること
 
 - [ ] **Step 6: コミット**
 
@@ -458,7 +458,7 @@ export function summarize(data) {
 - [ ] **Step 4: テストを実行して成功を確認する**
 
 Run: `cd /Users/taichi/petfood-study && npm test`
-Expected: PASS。合計 24 tests passing
+Expected: PASS。このタスクで追加したテストが全て通り、既存のテストが1件も失敗しないこと（総数は先行タスクの追補で増えている場合がある）
 
 - [ ] **Step 5: コミット**
 
@@ -662,7 +662,7 @@ export function firstSectionId(chapters) {
 - [ ] **Step 4: テストを実行して成功を確認する**
 
 Run: `cd /Users/taichi/petfood-study && npm test`
-Expected: PASS。合計 37 tests passing
+Expected: PASS。このタスクで追加したテストが全て通り、既存のテストが1件も失敗しないこと（総数は先行タスクの追補で増えている場合がある）
 
 - [ ] **Step 5: コミット**
 
@@ -1001,7 +1001,7 @@ export function createProgress(storage) {
 - [ ] **Step 4: テストを実行して成功を確認する**
 
 Run: `cd /Users/taichi/petfood-study && npm test`
-Expected: PASS。合計 53 tests passing
+Expected: PASS。このタスクで追加したテストが全て通り、既存のテストが1件も失敗しないこと（総数は先行タスクの追補で増えている場合がある）
 
 - [ ] **Step 5: コミット**
 
@@ -1192,7 +1192,7 @@ export function createSettings(storage) {
 - [ ] **Step 4: テストを実行して成功を確認する**
 
 Run: `cd /Users/taichi/petfood-study && npm test`
-Expected: PASS。合計 62 tests passing
+Expected: PASS。このタスクで追加したテストが全て通り、既存のテストが1件も失敗しないこと（総数は先行タスクの追補で増えている場合がある）
 
 - [ ] **Step 5: コミット**
 
@@ -1368,7 +1368,7 @@ export function pickWeak(questions, results, n, rnd = Math.random) {
 - [ ] **Step 4: テストを実行して成功を確認する**
 
 Run: `cd /Users/taichi/petfood-study && npm test`
-Expected: PASS。合計 73 tests passing
+Expected: PASS。このタスクで追加したテストが全て通り、既存のテストが1件も失敗しないこと（総数は先行タスクの追補で増えている場合がある）
 
 - [ ] **Step 5: コミット**
 
@@ -1628,7 +1628,7 @@ export function createSpeech({ synth, UtteranceCtor }) {
 - [ ] **Step 4: テストを実行して成功を確認する**
 
 Run: `cd /Users/taichi/petfood-study && npm test`
-Expected: PASS。合計 84 tests passing
+Expected: PASS。このタスクで追加したテストが全て通り、既存のテストが1件も失敗しないこと（総数は先行タスクの追補で増えている場合がある）
 
 - [ ] **Step 5: コミット**
 
@@ -2004,7 +2004,7 @@ window.__pfs = ctx;   // 実機での動作確認用
 - [ ] **Step 7: 既存テストが壊れていないことを確認する**
 
 Run: `cd /Users/taichi/petfood-study && npm test`
-Expected: PASS。合計 84 tests passing（このタスクではテストを増やさない。`db.js` と `wakelock.js` と views はブラウザAPI依存のため `js/lib/` のテスト対象外）
+Expected: PASS。このタスクで追加したテストが全て通り、既存のテストが1件も失敗しないこと（総数は先行タスクの追補で増えている場合がある）（このタスクではテストを増やさない。`db.js` と `wakelock.js` と views はブラウザAPI依存のため `js/lib/` のテスト対象外）
 
 - [ ] **Step 8: ブラウザで動作を確認する**
 
@@ -2378,7 +2378,7 @@ Expected:
 - [ ] **Step 6: テストが壊れていないことを確認する**
 
 Run: `cd /Users/taichi/petfood-study && npm test`
-Expected: PASS。合計 84 tests passing
+Expected: PASS。このタスクで追加したテストが全て通り、既存のテストが1件も失敗しないこと（総数は先行タスクの追補で増えている場合がある）
 
 - [ ] **Step 7: コミット**
 
@@ -2549,7 +2549,7 @@ Expected:
 - [ ] **Step 5: テストが壊れていないことを確認する**
 
 Run: `cd /Users/taichi/petfood-study && npm test`
-Expected: PASS。合計 84 tests passing
+Expected: PASS。このタスクで追加したテストが全て通り、既存のテストが1件も失敗しないこと（総数は先行タスクの追補で増えている場合がある）
 
 - [ ] **Step 6: コミット**
 
@@ -2758,7 +2758,7 @@ Expected:
 - [ ] **Step 5: テストが壊れていないことを確認する**
 
 Run: `cd /Users/taichi/petfood-study && npm test`
-Expected: PASS。合計 84 tests passing
+Expected: PASS。このタスクで追加したテストが全て通り、既存のテストが1件も失敗しないこと（総数は先行タスクの追補で増えている場合がある）
 
 - [ ] **Step 6: コミット**
 
@@ -3058,7 +3058,7 @@ Expected:
 - [ ] **Step 5: テストが壊れていないことを確認する**
 
 Run: `cd /Users/taichi/petfood-study && npm test`
-Expected: PASS。合計 84 tests passing
+Expected: PASS。このタスクで追加したテストが全て通り、既存のテストが1件も失敗しないこと（総数は先行タスクの追補で増えている場合がある）
 
 - [ ] **Step 6: コミット**
 
@@ -3240,7 +3240,7 @@ Expected: オフラインでもアプリが起動し、教材と進捗が残っ�
 - [ ] **Step 6: テストが壊れていないことを確認する**
 
 Run: `cd /Users/taichi/petfood-study && npm test`
-Expected: PASS。合計 84 tests passing
+Expected: PASS。このタスクで追加したテストが全て通り、既存のテストが1件も失敗しないこと（総数は先行タスクの追補で増えている場合がある）
 
 - [ ] **Step 7: コミット**
 
@@ -3800,7 +3800,7 @@ Expected: `混入なし`
 - [ ] **Step 4: テストを実行する**
 
 Run: `cd /Users/taichi/petfood-study && npm test`
-Expected: PASS。合計 84 tests passing
+Expected: PASS。このタスクで追加したテストが全て通り、既存のテストが1件も失敗しないこと（総数は先行タスクの追補で増えている場合がある）
 
 - [ ] **Step 5: コミットして push する**
 
