@@ -202,7 +202,7 @@ export function splitSentences(text) {
 - [ ] **Step 5: テストを実行して成功を確認する**
 
 Run: `cd /Users/taichi/petfood-study && npm test`
-Expected: PASS。9 tests passing
+Expected: PASS。12 tests passing
 
 - [ ] **Step 6: コミット**
 
@@ -458,7 +458,7 @@ export function summarize(data) {
 - [ ] **Step 4: テストを実行して成功を確認する**
 
 Run: `cd /Users/taichi/petfood-study && npm test`
-Expected: PASS。合計 21 tests passing
+Expected: PASS。合計 24 tests passing
 
 - [ ] **Step 5: コミット**
 
@@ -662,7 +662,7 @@ export function firstSectionId(chapters) {
 - [ ] **Step 4: テストを実行して成功を確認する**
 
 Run: `cd /Users/taichi/petfood-study && npm test`
-Expected: PASS。合計 34 tests passing
+Expected: PASS。合計 37 tests passing
 
 - [ ] **Step 5: コミット**
 
@@ -1001,7 +1001,7 @@ export function createProgress(storage) {
 - [ ] **Step 4: テストを実行して成功を確認する**
 
 Run: `cd /Users/taichi/petfood-study && npm test`
-Expected: PASS。合計 50 tests passing
+Expected: PASS。合計 53 tests passing
 
 - [ ] **Step 5: コミット**
 
@@ -1192,7 +1192,7 @@ export function createSettings(storage) {
 - [ ] **Step 4: テストを実行して成功を確認する**
 
 Run: `cd /Users/taichi/petfood-study && npm test`
-Expected: PASS。合計 59 tests passing
+Expected: PASS。合計 62 tests passing
 
 - [ ] **Step 5: コミット**
 
@@ -1368,7 +1368,7 @@ export function pickWeak(questions, results, n, rnd = Math.random) {
 - [ ] **Step 4: テストを実行して成功を確認する**
 
 Run: `cd /Users/taichi/petfood-study && npm test`
-Expected: PASS。合計 70 tests passing
+Expected: PASS。合計 73 tests passing
 
 - [ ] **Step 5: コミット**
 
@@ -1628,7 +1628,7 @@ export function createSpeech({ synth, UtteranceCtor }) {
 - [ ] **Step 4: テストを実行して成功を確認する**
 
 Run: `cd /Users/taichi/petfood-study && npm test`
-Expected: PASS。合計 81 tests passing
+Expected: PASS。合計 84 tests passing
 
 - [ ] **Step 5: コミット**
 
@@ -2004,7 +2004,7 @@ window.__pfs = ctx;   // 実機での動作確認用
 - [ ] **Step 7: 既存テストが壊れていないことを確認する**
 
 Run: `cd /Users/taichi/petfood-study && npm test`
-Expected: PASS。合計 81 tests passing（このタスクではテストを増やさない。`db.js` と `wakelock.js` と views はブラウザAPI依存のため `js/lib/` のテスト対象外）
+Expected: PASS。合計 84 tests passing（このタスクではテストを増やさない。`db.js` と `wakelock.js` と views はブラウザAPI依存のため `js/lib/` のテスト対象外）
 
 - [ ] **Step 8: ブラウザで動作を確認する**
 
@@ -2378,7 +2378,7 @@ Expected:
 - [ ] **Step 6: テストが壊れていないことを確認する**
 
 Run: `cd /Users/taichi/petfood-study && npm test`
-Expected: PASS。合計 81 tests passing
+Expected: PASS。合計 84 tests passing
 
 - [ ] **Step 7: コミット**
 
@@ -2549,7 +2549,7 @@ Expected:
 - [ ] **Step 5: テストが壊れていないことを確認する**
 
 Run: `cd /Users/taichi/petfood-study && npm test`
-Expected: PASS。合計 81 tests passing
+Expected: PASS。合計 84 tests passing
 
 - [ ] **Step 6: コミット**
 
@@ -2758,7 +2758,7 @@ Expected:
 - [ ] **Step 5: テストが壊れていないことを確認する**
 
 Run: `cd /Users/taichi/petfood-study && npm test`
-Expected: PASS。合計 81 tests passing
+Expected: PASS。合計 84 tests passing
 
 - [ ] **Step 6: コミット**
 
@@ -3058,7 +3058,7 @@ Expected:
 - [ ] **Step 5: テストが壊れていないことを確認する**
 
 Run: `cd /Users/taichi/petfood-study && npm test`
-Expected: PASS。合計 81 tests passing
+Expected: PASS。合計 84 tests passing
 
 - [ ] **Step 6: コミット**
 
@@ -3240,7 +3240,7 @@ Expected: オフラインでもアプリが起動し、教材と進捗が残っ�
 - [ ] **Step 6: テストが壊れていないことを確認する**
 
 Run: `cd /Users/taichi/petfood-study && npm test`
-Expected: PASS。合計 81 tests passing
+Expected: PASS。合計 84 tests passing
 
 - [ ] **Step 7: コミット**
 
@@ -3396,34 +3396,56 @@ SCHEMA = 1
 ENDERS = set("。！？!?")
 PAIRS = {"（": "）", "(": ")", "「": "」", "『": "』", "【": "】", "［": "］", "[": "]"}
 TRAILERS = set("」』）)】］]…")
+PAREN_CLOSERS = set("）)")
 
 
 def split_sentences(text: str) -> list[str]:
-    """js/lib/sentences.js と同じ規則で文に分割する。"""
+    """js/lib/sentences.js と同じ規則で文に分割する。
+
+    括弧の内側の句点では切らない。句点の直後に続く TRAILERS は前の文に含める。
+    丸括弧がトップレベルまで閉じ切った場合は、閉じ括弧の直前から TRAILERS を
+    読み飛ばして手前をたどり、最初の非TRAILERS文字が文末記号なら区切る。
+    """
     src = re.sub(r"\s+", " ", text or "").strip()
     if not src:
         return []
 
-    out, stack, buf = [], [], ""
+    out: list[str] = []
+    stack: list[str] = []
+    buf = ""
     i = 0
+
+    def flush() -> None:
+        nonlocal buf
+        if buf.strip():
+            out.append(buf.strip())
+        buf = ""
+
     while i < len(src):
         ch = src[i]
         buf += ch
+
         if ch in PAIRS:
             stack.append(PAIRS[ch])
         elif stack and ch == stack[-1]:
             stack.pop()
+            if not stack and ch in PAREN_CLOSERS:
+                j = i - 1
+                while j >= 0 and src[j] in TRAILERS:
+                    j -= 1
+                if j >= 0 and src[j] in ENDERS:
+                    while i + 1 < len(src) and src[i + 1] in TRAILERS:
+                        i += 1
+                        buf += src[i]
+                    flush()
         elif not stack and ch in ENDERS:
             while i + 1 < len(src) and src[i + 1] in TRAILERS:
                 i += 1
                 buf += src[i]
-            if buf.strip():
-                out.append(buf.strip())
-            buf = ""
+            flush()
         i += 1
 
-    if buf.strip():
-        out.append(buf.strip())
+    flush()
     return out
 
 
@@ -3626,6 +3648,10 @@ cases = [
   ('「これは重要である。」と記されている。', 1),
   ('総合栄養食（主食となる。水と併せて与える）は重要である。', 1),
   ('注意が必要である（詳細は後述する。）次に進む。', 2),
+  ('説明（外側（内側の文。））以上。', 2),
+  ('（そうだ。…）次', 2),
+  ('本当に驚いた（まさか本当とは！）次へ進む。', 2),
+  ('「発言（本当だ。）続き」と言った。', 1),
   ('句点のない行', 1),
   ('', 0),
 ]
@@ -3774,7 +3800,7 @@ Expected: `混入なし`
 - [ ] **Step 4: テストを実行する**
 
 Run: `cd /Users/taichi/petfood-study && npm test`
-Expected: PASS。合計 81 tests passing
+Expected: PASS。合計 84 tests passing
 
 - [ ] **Step 5: コミットして push する**
 
