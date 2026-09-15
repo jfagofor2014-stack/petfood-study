@@ -55,7 +55,12 @@ export function createProgress(storage) {
   };
 
   const putSection = (sectionId, rec) => {
-    const all = allProgress();
+    let all = allProgress();
+    // allProgress() が返したオブジェクトが壊れていたら（例: 文字列や配列）、
+    // 空のオブジェクトから作り直す
+    if (!isPlainObject(all)) {
+      all = {};
+    }
     all[sectionId] = rec;
     writeJSON(storage, K_PROG, all);
   };

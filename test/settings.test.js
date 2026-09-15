@@ -70,3 +70,27 @@ test('reset で既定値に戻る', () => {
   s.reset();
   assert.deepEqual(s.get(), DEFAULTS);
 });
+
+test('文字列を set しても落ちず、設定が変わらない', () => {
+  const s = createSettings(fakeStorage());
+  s.set({ rate: 1.5 });
+  const before = s.get();
+  assert.doesNotThrow(() => s.set('文字列'));
+  assert.deepEqual(s.get(), before);
+});
+
+test('数値を set しても落ちず、設定が変わらない', () => {
+  const s = createSettings(fakeStorage());
+  s.set({ rate: 1.5 });
+  const before = s.get();
+  assert.doesNotThrow(() => s.set(123));
+  assert.deepEqual(s.get(), before);
+});
+
+test('配列を set しても落ちず、設定が変わらない', () => {
+  const s = createSettings(fakeStorage());
+  s.set({ rate: 1.5 });
+  const before = s.get();
+  assert.doesNotThrow(() => s.set([]));
+  assert.deepEqual(s.get(), before);
+});

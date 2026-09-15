@@ -211,3 +211,19 @@ test('壊れた個別レコード(文字列)は getSection が UNREAD を返す'
   }));
   assert.deepEqual(p.getSection('ch01-s01'), { state: 'unread', maxSent: 0, doneAt: null });
 });
+
+test('pfs:progress が壊れた文字列(JSON文字列)でも markDone は落ちず、状態は done になる', () => {
+  const p = createProgress(fakeStorage({
+    'pfs:progress': JSON.stringify('"壊れている"'),
+  }));
+  assert.doesNotThrow(() => p.markDone('ch01-s01'));
+  assert.equal(p.getSection('ch01-s01').state, 'done');
+});
+
+test('pfs:progress が壊れた配列でも markSentence は落ちず、状態は reading になる', () => {
+  const p = createProgress(fakeStorage({
+    'pfs:progress': JSON.stringify([]),
+  }));
+  assert.doesNotThrow(() => p.markSentence('ch01-s01', 0, 4));
+  assert.equal(p.getSection('ch01-s01').state, 'reading');
+});

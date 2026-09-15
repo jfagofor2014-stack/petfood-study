@@ -18,6 +18,9 @@ export const DEFAULTS = Object.freeze({
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
+// null でも配列でもない「プレーンオブジェクト」だけを true とする。
+const isPlainObject = v => typeof v === 'object' && v !== null && !Array.isArray(v);
+
 function normalize(patch, base) {
   const out = { ...base };
 
@@ -52,7 +55,11 @@ export function createSettings(storage) {
   return {
     get: read,
     set(patch) {
-      const next = normalize(patch || {}, read());
+      // オブジェクト以外の値が渡されたときは無視し、現在の設定を返す
+      if (!isPlainObject(patch)) {
+        return read();
+      }
+      const next = normalize(patch, read());
       storage.setItem(KEY, JSON.stringify(next));
       return next;
     },
