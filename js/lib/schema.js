@@ -27,6 +27,8 @@ export function validateData(obj) {
   }
 
   const sectionIds = new Set();
+  // 問題の sectionId 検証・chapterNo 突き合わせに使う「節ID → 所属章の no」の対応表
+  const sectionChapterNo = new Map();
 
   for (const ch of chapters) {
     if (!isObj(ch) || !ch.id) { add('章に id がありません。'); continue; }
@@ -38,6 +40,7 @@ export function validateData(obj) {
       if (!isObj(sec) || !sec.id) { add(`${ch.id} の節に id がありません。`); continue; }
       if (sectionIds.has(sec.id)) add(`節IDが重複しています: ${sec.id}`);
       sectionIds.add(sec.id);
+      sectionChapterNo.set(sec.id, ch.no);
 
       if (!Array.isArray(sec.blocks)) { add(`${sec.id} に blocks がありません。`); continue; }
       for (const b of sec.blocks) {
@@ -46,6 +49,9 @@ export function validateData(obj) {
           continue;
         }
         if (b.type === 'figure') {
+          if (typeof b.img !== 'string' || b.img === '') {
+            add(`${sec.id} の figure に img がありません。`);
+          }
           if (!b.speak && !b.caption) add(`${sec.id} の figure に speak も caption もありません。`);
         } else if (!Array.isArray(b.sents) || b.sents.length === 0) {
           add(`${sec.id} の ${b.type} に sents がありません。`);
@@ -61,8 +67,10 @@ export function validateData(obj) {
     if (!Number.isInteger(q.answer) || q.answer < 0 || q.answer >= q.choices.length) {
       add(`${q.id} の answer が選択肢の範囲外です。`);
     }
-    if (q.sectionId && !sectionIds.has(q.sectionId)) {
+    if (!q.sectionId || !sectionIds.has(q.sectionId)) {
       add(`${q.id} が存在しない節を指しています: ${q.sectionId}`);
+    } else if (!Number.isInteger(q.chapterNo) || q.chapterNo !== sectionChapterNo.get(q.sectionId)) {
+      add(`${q.id} の chapterNo が節の所属章と一致しません。`);
     }
   }
 

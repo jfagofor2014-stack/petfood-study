@@ -71,6 +71,30 @@ test('figure に speak も caption もないと拒否する', () => {
   assert.ok(r.errors.some(e => e.includes('figure')));
 });
 
+test('img のない figure を拒否する', () => {
+  const d = validData();
+  d.chapters[0].sections[0].blocks[1] = { type: 'figure', caption: '図1', speak: '図1の説明。' };
+  const r = validateData(d);
+  assert.equal(r.ok, false);
+  assert.ok(r.errors.some(e => e.includes('ch01-s01') && e.includes('figure')));
+});
+
+test('img が空文字の figure を拒否する', () => {
+  const d = validData();
+  d.chapters[0].sections[0].blocks[1] = { type: 'figure', img: '', caption: '図1', speak: '図1の説明。' };
+  const r = validateData(d);
+  assert.equal(r.ok, false);
+  assert.ok(r.errors.some(e => e.includes('ch01-s01') && e.includes('figure')));
+});
+
+test('blocks が空配列の節を引き続き受け入れる', () => {
+  const d = validData();
+  d.chapters[0].sections[0].blocks = [];
+  const r = validateData(d);
+  assert.equal(r.ok, true);
+  assert.deepEqual(r.data.chapters[0].sections[0].blocks, []);
+});
+
 test('questions がなくても受け入れ、空配列を補う', () => {
   const d = validData();
   delete d.questions;
@@ -95,6 +119,24 @@ test('存在しない節を指す問題を拒否する', () => {
   const r = validateData(d);
   assert.equal(r.ok, false);
   assert.ok(r.errors.some(e => e.includes('ch99-s01')));
+});
+
+test('sectionId のない問題を拒否する', () => {
+  const d = validData();
+  d.questions = [{ id: 'q1', chapterNo: 1, type: 'choice4',
+    question: '問', choices: ['a', 'b', 'c', 'd'], answer: 0, explanation: '解説', page: 4 }];
+  const r = validateData(d);
+  assert.equal(r.ok, false);
+  assert.ok(r.errors.some(e => e.includes('q1')));
+});
+
+test('chapterNo が節の所属章と食い違う問題を拒否する', () => {
+  const d = validData();
+  d.questions = [{ id: 'q1', sectionId: 'ch01-s01', chapterNo: 2, type: 'choice4',
+    question: '問', choices: ['a', 'b', 'c', 'd'], answer: 0, explanation: '解説', page: 4 }];
+  const r = validateData(d);
+  assert.equal(r.ok, false);
+  assert.ok(r.errors.some(e => e.includes('q1')));
 });
 
 test('エラーは最大10件までにまとめる', () => {
