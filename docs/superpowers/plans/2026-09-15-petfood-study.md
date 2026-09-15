@@ -2045,7 +2045,11 @@ MSG
 
 **Interfaces:**
 - Consumes: `book.js` の `flattenSection`, `findSection`, `neighborSection`, `firstSectionId`；`speech.js`；`progress.js`；`settings.js`；`wakelock.js`
-- Produces: `renderPlayer(root, ctx, nav)`。`ctx` は `{ book, progress, settings, speech, wakeLock }`、`nav` は `{ showTab }`
+- Produces:
+  - `renderPlayer(root, ctx, nav) => teardown` — **後始末の関数を返す。** `app.js` は画面を切り替える前にこれを呼ぶ。返された関数は再生を止め、Wake Lock を解放し、このレンダリングで登録した `document` レベルのリスナーを外す
+  - `openPlayerAt(sectionId, sentIndex)` — もくじ・テスト画面から「この節を開く」ための入口。**呼び出し順に依存しないよう、モジュール内の変数に希望位置を積むだけ**にし、次に `renderPlayer` が走ったときに消費する
+
+**なぜ静的プロパティ（`renderPlayer.openAt = ...`）にしないか:** `renderPlayer` が一度も走っていない状態では未定義になり、また再レンダリングのたびに古いクロージャを指す危険がある。モジュール変数に積む方式なら呼び出し順を問わない。
 
 - [ ] **Step 1: player.js を書く**
 
@@ -2053,15 +2057,32 @@ MSG
 
 ```js
 import { flattenSection, findSection, neighborSection, firstSectionId } from '../lib/book.js';
-import { RATE_MIN, RATE_MAX, RATE_STEP } from '../lib/settings.js';
+import { RATE_STEP } from '../lib/settings.js';
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+// もくじ・テスト画面から「この節を開く」と指定された位置を一時的に預かる。
+// 次に renderPlayer が走ったとき一度だけ消費する。
+let pendingOpen = null;
+
+export function openPlayerAt(sectionId, sentIndex = 0) {
+  pendingOpen = { sectionId, sentIndex };
+}
+
+function takePendingOpen() {
+  const p = pendingOpen;
+  pendingOpen = null;
+  return p;
+}
 
 export function renderPlayer(root, ctx, nav) {
   const { book, progress, settings, speech, wakeLock } = ctx;
 
   // ---- 状態 ----------------------------------------------------------
-  const saved = progress.getPosition();
+  // openPlayerAt で指定された位置があればそれを優先し、なければ前回の再生位置、
+  // それも無ければ本の先頭から始める。
+  const requested = takePendingOpen();
+  const saved = requested || progress.getPosition();
   let sectionId = (saved && findSection(book.chapters, saved.sectionId))
     ? saved.sectionId
     : firstSectionId(book.chapters);
@@ -2250,23 +2271,22 @@ export function renderPlayer(root, ctx, nav) {
   });
 
   // 画面から離れたら必ず止める。Android Chrome は非表示だと読み上げを続けられない。
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden && playing) stop();
-  }, { once: false });
-
-  // 外部から節を指定して開くための入口（もくじ・テストから使う）
-  renderPlayer.openAt = (id, at = 0) => {
-    if (!findSection(book.chapters, id)) return;
-    if (playing) stop();
-    sectionId = id;
-    index = at;
-    progress.setPosition(sectionId, index);
-    drawHead(); drawBody();
-  };
+  // このリスナーは teardown で必ず外す。外さないと再レンダリングのたびに積み上がり、
+  // 古いクロージャが残って停止処理が二重に走る。
+  const onVisibility = () => { if (document.hidden && playing) stop(); };
+  document.addEventListener('visibilitychange', onVisibility);
 
   drawHead();
   drawBody();
   speech.japaneseVoices().then(v => { voices = v; });
+
+  // app.js が画面を切り替える前に呼ぶ。再生を止め、Wake Lock を解放し、
+  // document レベルのリスナーを外す。これを怠ると、もくじタブに移っても
+  // 読み上げが鳴り続け、進捗が書き換わり続ける。
+  return () => {
+    document.removeEventListener('visibilitychange', onVisibility);
+    if (playing) stop(); else { speech.cancel(); wakeLock.disable(); }
+  };
 }
 ```
 
@@ -2321,6 +2341,28 @@ import { renderPlayer } from './views/player.js';
 ```js
 const views = { player: renderPlayer };
 ```
+
+さらに `showTab` を、画面を切り替える前に前の画面の後始末を呼ぶ形に差し替える:
+
+```js
+let teardown = null;
+
+function showTab(name) {
+  // 前の画面の後始末。これを怠ると、もくじタブに移っても読み上げが鳴り続ける。
+  if (teardown) { teardown(); teardown = null; }
+
+  ctx.tab = name;
+  for (const b of el.tabs.querySelectorAll('.tab')) {
+    b.setAttribute('aria-current', String(b.dataset.tab === name));
+  }
+  el.view.innerHTML = '';
+  const render = views[name];
+  if (render) teardown = render(el.view, ctx, { showTab }) || null;
+  else el.view.innerHTML = '<div class="card muted">この画面はまだありません。</div>';
+}
+```
+
+画面モジュールは後始末が不要なら何も返さなくてよい（`undefined` は `null` として扱われる）。
 
 - [ ] **Step 4: 動作確認用のダミー教材を作る**
 
@@ -2415,7 +2457,7 @@ MSG
 
 ```js
 import { findSection, sectionLength } from '../lib/book.js';
-import { renderPlayer } from './player.js';
+import { openPlayerAt } from './player.js';
 
 const LABEL = { unread: '未読', reading: '途中', done: '読了' };
 
@@ -2455,8 +2497,8 @@ export function renderToc(root, ctx, nav) {
   });
 
   function open(sectionId, sentIndex) {
+    openPlayerAt(sectionId, sentIndex);
     nav.showTab('player');
-    renderPlayer.openAt(sectionId, sentIndex);
   }
 }
 
@@ -2796,7 +2838,7 @@ MSG
 ```js
 import { pickForSection, pickForChapter, pickWeak } from '../lib/quizpick.js';
 import { listSections, findSection } from '../lib/book.js';
-import { renderPlayer } from './player.js';
+import { openPlayerAt } from './player.js';
 
 const KEY = 'pfs:quiz';
 const PER_SECTION = 5;
@@ -2925,8 +2967,8 @@ export function renderQuiz(root, ctx, nav) {
       `;
 
       root.querySelector('#q-goto').addEventListener('click', () => {
+        openPlayerAt(q.sectionId, 0);
         nav.showTab('player');
-        renderPlayer.openAt(q.sectionId, 0);
       });
       root.querySelector('#q-next').addEventListener('click', () => {
         at += 1;
@@ -2956,8 +2998,8 @@ export function renderQuiz(root, ctx, nav) {
 
       for (const b of root.querySelectorAll('[data-goto]')) {
         b.addEventListener('click', () => {
+          openPlayerAt(b.dataset.goto, 0);
           nav.showTab('player');
-          renderPlayer.openAt(b.dataset.goto, 0);
         });
       }
       root.querySelector('#q-back').addEventListener('click', menu);
