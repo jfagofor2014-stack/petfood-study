@@ -142,9 +142,26 @@ export function renderPlayer(root, ctx, nav) {
     while (playing && myToken === token) {
       const us = utterances();
       if (index >= us.length) {
-        progress.markDone(sectionId);
-        const next = cfg.autoNextSection ? neighborSection(book.chapters, sectionId, 1) : null;
-        if (!next) { stop(); break; }
+        // 文数0の節（本文がまだ無い節）は読了扱いにしない。章ごとに少しずつ教材を
+        // 作る運用では blocks: [] の節が正常に存在するため、ここで markDone すると
+        // 未作成の節まで読了になってしまう。
+        if (us.length > 0) progress.markDone(sectionId);
+
+        if (!cfg.autoNextSection) { if (myToken === token) stop(); break; }
+
+        const next = neighborSection(book.chapters, sectionId, 1);
+        if (!next) { if (myToken === token) stop(); break; }
+
+        if (flattenSection(next.section).length === 0) {
+          // 次の節も本文が無い場合はそこへ進まずに停止する。進んでしまうと、
+          // 本文が無い節が続く限り本の最後まで自動で飛び続けてしまうため。
+          if (myToken === token) {
+            showError('この先の節はまだ本文がありません。');
+            stop();
+          }
+          break;
+        }
+
         sectionId = next.section.id;
         index = 0;
         drawHead(); drawBody();
@@ -161,8 +178,8 @@ export function renderPlayer(root, ctx, nav) {
       } catch {
         if (myToken === token) {
           showError('読み上げができませんでした。端末の音声設定をご確認ください。');
+          stop();                     // 読み上げが失敗したら止めて位置は保つ
         }
-        stop();                       // 読み上げが失敗したら止めて位置は保つ
         break;
       }
       if (myToken !== token) break;
@@ -204,7 +221,7 @@ export function renderPlayer(root, ctx, nav) {
     const wasPlaying = playing;
     if (wasPlaying) stop();
     const us = utterances();
-    index = Math.max(0, Math.min(nextIndex, Math.max(0, us.length - 1)));
+    index = clampSentIndex(nextIndex, us.length);
     progress.setPosition(sectionId, index);
     drawHead(); highlight();
     if (wasPlaying) start();
