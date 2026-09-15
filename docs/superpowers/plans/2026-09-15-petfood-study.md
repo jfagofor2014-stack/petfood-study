@@ -2448,7 +2448,7 @@ MSG
 - Modify: `css/style.css`（末尾に追記）
 
 **Interfaces:**
-- Consumes: `book.js` の `findSection`, `sectionLength`；`progress.js`；`player.js` の `renderPlayer.openAt`
+- Consumes: `book.js` の `findSection`, `sectionLength`；`progress.js`；`player.js` の `openPlayerAt`
 - Produces: `renderToc(root, ctx, nav)`
 
 - [ ] **Step 1: toc.js を書く**
@@ -2828,7 +2828,7 @@ MSG
 - Modify: `css/style.css`（末尾に追記）
 
 **Interfaces:**
-- Consumes: `quizpick.js` の `pickForSection`, `pickForChapter`, `pickWeak`；`book.js` の `listSections`, `findSection`；`player.js` の `renderPlayer.openAt`
+- Consumes: `quizpick.js` の `pickForSection`, `pickForChapter`, `pickWeak`；`book.js` の `listSections`, `findSection`；`player.js` の `openPlayerAt`
 - Produces: `renderQuiz(root, ctx, nav)`。成績は localStorage の `pfs:quiz` に `{ [questionId]: { attempts, correct, lastResult, lastAt } }` の形で持つ
 
 - [ ] **Step 1: quiz ビューを書く**
