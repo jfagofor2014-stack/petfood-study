@@ -1,5 +1,6 @@
 import { flattenSection, findSection, neighborSection, firstSectionId } from '../lib/book.js';
 import { RATE_STEP } from '../lib/settings.js';
+import { escapeHtml } from '../lib/html.js';
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
@@ -113,10 +114,6 @@ export function renderPlayer(root, ctx, nav) {
     }
     const cur = body.querySelector('.is-current');
     if (cur) cur.scrollIntoView({ block: 'center', behavior: 'smooth' });
-  }
-
-  function escapeHtml(s) {
-    return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   }
 
   // index を 0 以上 (文数-1) 以下（文数が0なら0）に丸める。
