@@ -27,6 +27,7 @@ const ASSETS = [
   'manifest.json',
   'icons/icon-192.png',
   'icons/icon-512.png',
+  'icons/maskable-512.png',
 ];
 
 self.addEventListener('install', e => {
@@ -56,7 +57,12 @@ self.addEventListener('fetch', e => {
           }
           return res;
         })
-        .catch(() => hit);
+        .catch(err => {
+          // キャッシュにもネットワークにも無い場合、undefined を返すのではなくエラーを投げ直す。
+          // そうしないと respondWith に undefined で解決する Promise を渡すことになり、仕様違反。
+          if (hit) return hit;
+          throw err;
+        });
       return hit || net;
     })
   );
