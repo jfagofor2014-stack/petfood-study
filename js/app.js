@@ -52,6 +52,7 @@ function showTab(name) {
 function startMain(book) {
   ctx.book = book;
   ctx.progress.pruneTo(book.chapters);
+  ctx.quizResults.pruneTo(book.questions || []);
   el.onboarding.hidden = true;
   el.main.hidden = false;
   el.rate.textContent = `${ctx.settings.get().rate.toFixed(1)}倍`;
@@ -87,4 +88,8 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   });
 }
 
-window.__pfs = ctx;   // 実機での動作確認用
+// 実機での動作確認用。公開環境でグローバルに内部状態を露出しないよう、
+// localhost での動作確認時のみ設定する。
+if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+  window.__pfs = ctx;
+}
