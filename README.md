@@ -41,7 +41,7 @@
 
 ## 使い方
 
-1. Android Chrome で `https://<ユーザー名>.github.io/petfood-study/` を開く
+1. Android Chrome で `https://jfagofor2014-stack.github.io/petfood-study/` を開く
 2. 教材ファイル（`petfood-data.json`）を選ぶ
 3. メニューから「ホーム画面に追加」しておくと、次回からアイコンから起動できる
 
