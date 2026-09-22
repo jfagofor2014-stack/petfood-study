@@ -2,6 +2,7 @@ import { loadBook } from './lib/db.js';
 import { createProgress } from './lib/progress.js';
 import { createSettings } from './lib/settings.js';
 import { createQuizResults } from './lib/quizresults.js';
+import { createMockState } from './lib/mockstate.js';
 import { createSpeech } from './lib/speech.js';
 import { createWakeLock } from './lib/wakelock.js';
 import { renderOnboarding } from './views/onboarding.js';
@@ -9,6 +10,7 @@ import { renderPlayer } from './views/player.js';
 import { renderToc } from './views/toc.js';
 import { renderQuiz } from './views/quiz.js';
 import { renderSettings } from './views/settings.js';
+import { renderMock } from './views/mock.js';
 
 const el = {
   onboarding: document.getElementById('onboarding'),
@@ -23,6 +25,7 @@ const ctx = {
   progress: createProgress(localStorage),
   settings: createSettings(localStorage),
   quizResults: createQuizResults(localStorage),
+  mockState: createMockState(localStorage),
   speech: createSpeech({ synth: window.speechSynthesis, UtteranceCtor: window.SpeechSynthesisUtterance }),
   wakeLock: createWakeLock(navigator),
   tab: 'player',
@@ -31,7 +34,11 @@ const ctx = {
 // 画面モジュールは後続タスクで実装する。未実装のタブは案内だけ出す。
 // 後続タスクはこのオブジェクトに直接キーを足していく（registerView のような
 // 登録用エクスポートは、呼び出し元が存在しないため作らない）。
-const views = { player: renderPlayer, toc: renderToc, quiz: renderQuiz, settings: renderSettings };
+const views = { player: renderPlayer, toc: renderToc, quiz: renderQuiz, settings: renderSettings, mock: renderMock };
+
+// タブバーに出さない画面が、どのタブに属して見えるかを決める。
+// 模試はタブを5個に増やさずテストタブの中の画面として扱う。
+const TAB_OF = { mock: 'quiz' };
 
 let teardown = null;
 
@@ -40,8 +47,9 @@ function showTab(name) {
   if (teardown) { teardown(); teardown = null; }
 
   ctx.tab = name;
+  const highlighted = TAB_OF[name] || name;
   for (const b of el.tabs.querySelectorAll('.tab')) {
-    b.setAttribute('aria-current', String(b.dataset.tab === name));
+    b.setAttribute('aria-current', String(b.dataset.tab === highlighted));
   }
   el.view.innerHTML = '';
   const render = views[name];
