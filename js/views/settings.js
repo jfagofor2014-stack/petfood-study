@@ -7,7 +7,7 @@ import { escapeHtml as esc } from '../lib/html.js';
 const isPlainObject = v => typeof v === 'object' && v !== null && !Array.isArray(v);
 
 export function renderSettings(root, ctx, nav) {
-  const { book, settings, speech, progress, quizResults } = ctx;
+  const { book, settings, speech, progress, quizResults, mockState } = ctx;
   const cfg = settings.get();
   const info = summarize(book);
 
@@ -99,9 +99,13 @@ export function renderSettings(root, ctx, nav) {
   });
 
   $('s-export').addEventListener('click', () => {
-    // 進捗とテスト成績の両方を書き出す。片方だけ復元すると
-    // 「進捗をリセット」で両方消える挙動と食い違ってしまうため。
-    const data = { progress: progress.exportAll(), quiz: quizResults.exportAll() };
+    // 進捗・テスト成績・模試の履歴をまとめて書き出す。一部だけ復元すると
+    // 「進捗をリセット」で全部消える挙動と食い違ってしまうため。
+    const data = {
+      progress: progress.exportAll(),
+      quiz: quizResults.exportAll(),
+      mock: mockState.exportAll(),
+    };
     const blob = new Blob([JSON.stringify(data, null, 1)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
@@ -122,7 +126,11 @@ export function renderSettings(root, ctx, nav) {
       // 直下に position を持つ。新形式は progress キーの下にそれが入っている。
       const isNewFormat = isPlainObject(data) && 'progress' in data && !('position' in data);
       progress.importAll(isNewFormat ? data.progress : data);
-      if (isNewFormat) quizResults.importAll(data.quiz);
+      if (isNewFormat) {
+        quizResults.importAll(data.quiz);
+        // 模試の履歴が無い古いファイルでも落ちない（importAll がオブジェクト以外を無視する）。
+        mockState.importAll(data.mock);
+      }
       progress.pruneTo(book.chapters);
       quizResults.pruneTo(book.questions || []);
       // await をまたいだので、その間にこの画面を離れていないか確認する。
@@ -136,9 +144,10 @@ export function renderSettings(root, ctx, nav) {
   });
 
   $('s-reset').addEventListener('click', () => {
-    if (!confirm('すべての進捗とテスト成績を消します。よろしいですか。')) return;
+    if (!confirm('すべての進捗とテスト成績、模試の履歴を消します。よろしいですか。')) return;
     progress.reset();
     quizResults.reset();
+    mockState.reset();
     $('s-msg').textContent = '進捗をリセットしました。';
   });
 
