@@ -11,6 +11,9 @@ const LIMIT_MS = 60 * 60 * 1000;
 // 残りがこれを切ったら時計を赤くする。本番のCBTも残り時間を赤字で見せている。
 const WARN_MS = 5 * 60 * 1000;
 
+// 毎秒 localStorage に書くと重いので、この間隔でまとめて保存する。
+const SAVE_EVERY_MS = 5000;
+
 const mmss = ms => {
   const total = Math.max(0, Math.round(ms / 1000));
   const m = String(Math.floor(total / 60)).padStart(2, '0');
@@ -34,6 +37,8 @@ export function renderMock(root, ctx, nav) {
   // 解答中だけ中身が入る。{ active: 中断データ, qs: 出題中の問題 }
   // active は mockState から読んだものをそのまま持ち回り、変更のたびに保存する。
   let exam = null;
+  let timer = null;
+  let lastSaved = 0;
 
   const $ = id => root.querySelector('#' + id);
 
@@ -234,6 +239,8 @@ export function renderMock(root, ctx, nav) {
 
     drawFontButtons();
     drawQuestion();
+    // 裏で描画された場合（教材取り込み直後など）は、可視に戻ってから動かす。
+    if (!document.hidden) startTimer();
   }
 
   function drawFontButtons() {
@@ -297,10 +304,46 @@ export function renderMock(root, ctx, nav) {
 
   function save() {
     mockState.saveActive(exam.active);
+    lastSaved = Date.now();
   }
+
+  // ---- タイマー ------------------------------------------------------
+  // 画面が見えている間だけ進める。Android では画面が消えるとページが裏に回るため、
+  // 実時間で減らし続けると着信ひとつで模試が潰れてしまう。
+  function startTimer() {
+    stopTimer();
+    timer = setInterval(tick, 1000);
+  }
+
+  function stopTimer() {
+    if (timer) { clearInterval(timer); timer = null; }
+  }
+
+  function tick() {
+    if (!exam) { stopTimer(); return; }
+
+    exam.active.remainingMs = Math.max(0, exam.active.remainingMs - 1000);
+    drawClock();
+    if (Date.now() - lastSaved >= SAVE_EVERY_MS) save();
+
+    if (exam.active.remainingMs === 0) {
+      save();
+      finish(true);
+    }
+  }
+
+  // 他アプリへの切替・画面消灯・タブ移動のいずれでもここに来る。
+  // 止めたうえで即座に保存しないと、そのまま終了されたとき解答が失われる。
+  const onVisibility = () => {
+    if (!exam) return;
+    if (document.hidden) { stopTimer(); save(); }
+    else startTimer();
+  };
+  document.addEventListener('visibilitychange', onVisibility);
 
   // ---- 採点 ----------------------------------------------------------
   function finish(timedOut) {
+    stopTimer();
     const graded = gradeExam(exam.qs, exam.active.answers);
     mockState.clearActive();
     exam = null;
@@ -325,8 +368,12 @@ export function renderMock(root, ctx, nav) {
 
   drawHome();
 
-  // この画面が登録するリスナーは全て root 配下の要素に直接付いているので、
-  // app.js が innerHTML を空にすれば一緒に捨てられる。
-  // タイマーを持つようになったら、ここで必ず止めること。
-  return () => {};
+  // app.js が画面を切り替える前に呼ぶ。止め忘れるとタブを移ったあとも
+  // 残り時間が減り続け、模試が知らないうちに時間切れになる。
+  return () => {
+    document.removeEventListener('visibilitychange', onVisibility);
+    stopTimer();
+    // タブ移動も中断として扱う。残り時間と解答をここで確定保存する。
+    if (exam) save();
+  };
 }
