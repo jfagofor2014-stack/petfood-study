@@ -269,3 +269,27 @@ select { width: 100%; min-height: 48px; padding: 0 10px; font: inherit;
 }
 .m-ov-panel p { margin: 0 0 8px; }
 .m-ov-panel .s-btns { justify-content: flex-end; }
+
+
+.m-ov-grid {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px;
+  margin: 12px 0;
+}
+.m-cell {
+  min-height: 44px;
+  border: 1px solid var(--line); border-radius: 8px;
+  background: var(--surface); color: var(--muted);
+  font: inherit; font-size: 13px; font-variant-numeric: tabular-nums; cursor: pointer;
+}
+.m-cell.is-done { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 700; }
+.m-cell.is-flag { border-color: #d8a600; border-width: 2px; }
+.m-cell.is-now { outline: 3px solid #ffeeb4; }
+
+.m-legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--muted); }
+.m-legend span { display: flex; align-items: center; gap: 4px; }
+.m-sw {
+  width: 14px; height: 14px; border-radius: 4px;
+  border: 1px solid var(--line); background: var(--surface);
+}
+.m-sw.is-done { background: var(--accent); border-color: var(--accent); }
+.m-sw.is-flag { border-color: #d8a600; border-width: 2px; }

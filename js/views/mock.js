@@ -159,6 +159,19 @@ export function renderMock(root, ctx, nav) {
         </div>
       </div>
 
+      <div class="m-ov" id="m-status-ov" hidden>
+        <div class="m-ov-panel">
+          <div class="m-h1">解答状況</div>
+          <div class="m-ov-grid" id="m-grid"></div>
+          <div class="m-legend">
+            <span><i class="m-sw is-done"></i>解答済み</span>
+            <span><i class="m-sw"></i>未解答</span>
+            <span><i class="m-sw is-flag"></i>後で見直す</span>
+          </div>
+          <div class="s-btns"><button class="btn ghost sm" id="m-status-close">閉じる</button></div>
+        </div>
+      </div>
+
       <div class="m-ov" id="m-confirm" hidden>
         <div class="m-ov-panel">
           <p>試験を終了します。よろしいですか？</p>
@@ -195,6 +208,21 @@ export function renderMock(root, ctx, nav) {
         drawFontButtons();
       });
     }
+
+    $('m-status').addEventListener('click', () => {
+      drawStatus();
+      $('m-status-ov').hidden = false;
+    });
+    $('m-status-close').addEventListener('click', () => { $('m-status-ov').hidden = true; });
+
+    $('m-grid').addEventListener('click', e => {
+      const cell = e.target.closest('[data-i]');
+      if (!cell) return;
+      exam.active.at = Number(cell.dataset.i);
+      save();
+      $('m-status-ov').hidden = true;
+      drawQuestion();
+    });
 
     $('m-end').addEventListener('click', () => {
       const blank = exam.active.answers.filter(a => !Number.isInteger(a)).length;
@@ -243,6 +271,20 @@ export function renderMock(root, ctx, nav) {
 
     drawClock();
     window.scrollTo(0, 0);
+  }
+
+  // 解答状況のマス目。出題数ぶん並べ、解答済み・後で見直す・現在位置を見分けられるようにする。
+  function drawStatus() {
+    const { active, qs } = exam;
+    $('m-grid').innerHTML = qs.map((_, i) => {
+      const cls = [
+        'm-cell',
+        Number.isInteger(active.answers[i]) ? 'is-done' : '',
+        active.flags[i] ? 'is-flag' : '',
+        i === active.at ? 'is-now' : '',
+      ].filter(Boolean).join(' ');
+      return `<button class="${cls}" data-i="${i}">${i + 1}</button>`;
+    }).join('');
   }
 
   function move(delta) {
