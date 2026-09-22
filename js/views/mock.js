@@ -29,7 +29,9 @@ const fmtDate = iso => {
   return Number.isNaN(d.getTime()) ? '' : `${d.getMonth() + 1}/${d.getDate()}`;
 };
 
-const fmtElapsed = ms => `${Math.max(0, Math.round(ms / 60000))}分`;
+// elapsedMsが欠けている・壊れている場合でも「NaN分」を出さない。
+// （履歴データはmockstate.jsのisValidEntryで検査済みのはずだが、表示側でも二重に守る）
+const fmtElapsed = ms => Number.isFinite(ms) ? `${Math.max(0, Math.round(ms / 60000))}分` : '―分';
 
 // 合格基準は非公開なので合否は出さない。目安であることを明示して添える。
 const PASS_HINT = '合格基準は公開されていません。目安として8割（20問）を安定して超えられれば安心です。';

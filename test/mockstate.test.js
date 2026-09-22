@@ -96,6 +96,28 @@ test('履歴の中の壊れた要素だけを落とす', () => {
   assert.deepEqual(m.history().map(e => e.score), [19, 3]);
 });
 
+// 学習データの読み込み（importAll）は外部JSONを取り込むため、elapsedMsが
+// 欠けた・壊れた履歴が入ってくる経路が実在する。fmtElapsedがNaN分を出さないよう、
+// 保存・読み出しの両方でelapsedMsが有限な数値であることを検査する。
+test('elapsedMsが欠けている・不正な履歴は保存されない', () => {
+  const m = createMockState(fakeStorage());
+  assert.deepEqual(m.pushHistory(entry({ elapsedMs: undefined })), []);
+  assert.deepEqual(m.pushHistory(entry({ elapsedMs: '1980000' })), []);
+  assert.deepEqual(m.pushHistory(entry({ elapsedMs: NaN })), []);
+  assert.deepEqual(m.pushHistory(entry({ elapsedMs: Infinity })), []);
+});
+
+test('elapsedMsが欠けている・不正な履歴要素は読み出し時に落とす', () => {
+  const raw = JSON.stringify([
+    entry(),
+    entry({ score: 2, elapsedMs: undefined }),
+    entry({ score: 3, elapsedMs: '1980000' }),
+    entry({ score: 4, elapsedMs: NaN }),
+  ]);
+  const m = createMockState(fakeStorage({ 'pfs:mockhist': raw }));
+  assert.deepEqual(m.history().map(e => e.score), [19]);
+});
+
 test('直近3件で出た問題IDの和集合を返す', () => {
   const m = createMockState(fakeStorage());
   m.pushHistory(entry({ questionIds: ['a', 'b'] }));

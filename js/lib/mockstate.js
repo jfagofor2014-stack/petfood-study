@@ -36,12 +36,16 @@ function isValidActive(a) {
   return true;
 }
 
+// elapsedMs は「学習データを読み込む」で外部JSONから取り込まれうるため、
+// 欠けている・数値でない・NaN/Infinity といった壊れた値をここで弾く。
+// 弾かずに通すと表示側（mock.js の fmtElapsed）が「NaN分」を出してしまう。
 const isValidEntry = e =>
   isPlainObject(e) &&
   Number.isInteger(e.score) &&
   Number.isInteger(e.total) &&
   typeof e.finishedAt === 'string' &&
-  Array.isArray(e.questionIds);
+  Array.isArray(e.questionIds) &&
+  Number.isFinite(e.elapsedMs);
 
 export function createMockState(storage) {
   const readHistory = () => {
