@@ -4,6 +4,7 @@
 
 import { buildExam, gradeExam } from '../lib/mockexam.js';
 import { escapeHtml as esc } from '../lib/html.js';
+import { openPlayerAt } from './player.js';
 
 const TOTAL = 25;
 const LIMIT_MS = 60 * 60 * 1000;
@@ -30,8 +31,11 @@ const fmtDate = iso => {
 
 const fmtElapsed = ms => `${Math.max(0, Math.round(ms / 60000))}分`;
 
+// 合格基準は非公開なので合否は出さない。目安であることを明示して添える。
+const PASS_HINT = '合格基準は公開されていません。目安として8割（20問）を安定して超えられれば安心です。';
+
 export function renderMock(root, ctx, nav) {
-  const { book, mockState, settings } = ctx;
+  const { book, mockState, settings, quizResults } = ctx;
   const questions = book.questions || [];
 
   // 解答中だけ中身が入る。{ active: 中断データ, qs: 出題中の問題 }
@@ -344,26 +348,92 @@ export function renderMock(root, ctx, nav) {
   // ---- 採点 ----------------------------------------------------------
   function finish(timedOut) {
     stopTimer();
-    const graded = gradeExam(exam.qs, exam.active.answers);
+    const { qs, active } = exam;
+    const graded = gradeExam(qs, active.answers);
+    const elapsedMs = Math.max(0, LIMIT_MS - active.remainingMs);
+
+    // 模試の正誤も既存の成績に記録する。
+    // こうすると間違えた問題がそのまま「苦手な問題を解く」に流れる。
+    for (const d of graded.details) quizResults.record(d.q.id, d.ok);
+
+    mockState.pushHistory({
+      finishedAt: new Date().toISOString(),
+      score: graded.score,
+      total: graded.total,
+      elapsedMs,
+      byChapter: graded.byChapter,
+      questionIds: qs.map(q => q.id),
+    });
     mockState.clearActive();
     exam = null;
-    drawResult(graded, timedOut);
+
+    drawResult(graded, elapsedMs, timedOut);
   }
 
-  function drawResult(graded, timedOut) {
+  function drawResult(graded, elapsedMs, timedOut) {
+    const pct = Math.round(graded.rate * 100);
+    const chTitle = no => {
+      const ch = (book.chapters || []).find(c => c.no === no);
+      return ch ? `第${ch.no}章 ${ch.title}` : `第${no}章`;
+    };
+
     root.innerHTML = `
       <div class="card">
         ${timedOut ? '<div class="error">時間切れです。</div>' : ''}
         <div class="q-score">${esc(graded.score)} / ${esc(graded.total)} 問正解</div>
-        <div class="bar" style="margin-top:10px"><i style="width:${Math.round(graded.rate * 100)}%"></i></div>
+        <div class="bar" style="margin-top:10px"><i style="width:${pct}%"></i></div>
+        <div class="muted" style="margin-top:6px">正答率 ${pct}％／所要時間 ${esc(fmtElapsed(elapsedMs))}</div>
+        <p class="muted">${PASS_HINT}</p>
       </div>
+
+      <div class="card">
+        <div class="muted">章別</div>
+        <ul class="m-bych">
+          ${graded.byChapter.map(c => `<li>
+            <span>${esc(chTitle(c.chapterNo))}</span>
+            <b class="${c.correct === c.total ? 'is-right' : ''}">${esc(c.correct)} / ${esc(c.total)}</b>
+          </li>`).join('')}
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="muted">すべての問題を見直す</div>
+        ${graded.details.map(reviewHtml).join('')}
+      </div>
+
       <div class="s-btns">
         <button class="btn" id="m-again">もう一度挑戦</button>
         <button class="btn ghost" id="m-back">テストに戻る</button>
       </div>
     `;
+
+    for (const b of root.querySelectorAll('[data-goto]')) {
+      b.addEventListener('click', () => {
+        openPlayerAt(b.dataset.goto, 0);
+        nav.showTab('player');
+      });
+    }
     $('m-again').addEventListener('click', startExam);
     $('m-back').addEventListener('click', () => nav.showTab('quiz'));
+  }
+
+  // 見直し1件分。ここでは解答中と違い、章・ページ・正解・解説を全て出す。
+  function reviewHtml(d, i) {
+    const chosen = d.chosen === null ? '未解答' : d.q.choices[d.chosen];
+    return `
+      <div class="m-rev">
+        <div class="m-rev-h">
+          <span class="muted">問${i + 1}</span>
+          <span class="q-verdict ${d.ok ? 'is-right' : 'is-wrong'}">${d.ok ? '正解' : '不正解'}</span>
+        </div>
+        <div class="m-qtext">${esc(d.q.question)}</div>
+        <div class="muted">あなたの解答：${esc(chosen)}</div>
+        ${d.ok ? '' : `<div class="muted">正解：${esc(d.q.choices[d.q.answer])}</div>`}
+        <p>${esc(d.q.explanation)}</p>
+        <div class="muted">第${esc(d.q.chapterNo)}章（p.${esc(d.q.page)}）</div>
+        <div class="s-btns"><button class="btn ghost sm" data-goto="${esc(d.q.sectionId)}">この節を読む</button></div>
+      </div>
+    `;
   }
 
   drawHome();

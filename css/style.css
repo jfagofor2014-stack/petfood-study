@@ -293,3 +293,17 @@ select { width: 100%; min-height: 48px; padding: 0 10px; font: inherit;
 }
 .m-sw.is-done { background: var(--accent); border-color: var(--accent); }
 .m-sw.is-flag { border-color: #d8a600; border-width: 2px; }
+
+.m-bych { list-style: none; margin: 8px 0 0; padding: 0; }
+.m-bych li {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+  padding: 10px 0; border-bottom: 1px solid var(--line);
+}
+.m-bych li:last-child { border-bottom: 0; }
+.m-bych b { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.m-bych b.is-right { color: var(--accent); }
+
+.m-rev { padding: 14px 0; border-bottom: 1px solid var(--line); }
+.m-rev:last-child { border-bottom: 0; }
+.m-rev-h { display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px; }
+.m-rev p { margin: 6px 0; }
