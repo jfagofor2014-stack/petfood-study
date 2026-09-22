@@ -40,6 +40,10 @@ export function renderQuiz(root, ctx, nav) {
         <div class="q-note">この問題は公式の過去問ではありません。テキストの範囲から作成した予想問題です。</div>
       </div>
       <div class="card">
+        <button class="btn" id="q-mock">本番形式の模擬試験（25問・60分）</button>
+        <p class="muted">答えを見ずに25問を通して解き、最後にまとめて採点します。</p>
+      </div>
+      <div class="card">
         <button class="btn" id="q-weak" ${weak.length ? '' : 'disabled'}>
           苦手な問題を解く（${weak.length}問）
         </button>
@@ -63,6 +67,7 @@ export function renderQuiz(root, ctx, nav) {
       </div>
     `;
 
+    root.querySelector('#q-mock').addEventListener('click', () => nav.showTab('mock'));
     root.querySelector('#q-weak').addEventListener('click', () => run(weak));
     for (const b of root.querySelectorAll('.q-pick')) {
       b.addEventListener('click', () => {

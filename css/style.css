@@ -181,3 +181,134 @@ select { width: 100%; min-height: 48px; padding: 0 10px; font: inherit;
   background: none; color: var(--ink); font: inherit; cursor: pointer;
 }
 .q-pick:last-child { border-bottom: 0; }
+
+/* 模試 */
+.m-h1 { font-weight: 700; font-size: 17px; }
+
+.m-hist { list-style: none; margin: 8px 0 0; padding: 0; }
+.m-hist li {
+  display: flex; align-items: baseline; gap: 12px;
+  padding: 10px 0; border-bottom: 1px solid var(--line);
+}
+.m-hist li:last-child { border-bottom: 0; }
+.m-hist b { font-variant-numeric: tabular-nums; }
+.m-hist li > :last-child { margin-left: auto; }
+
+#m-head {
+  position: sticky; top: 44px; z-index: 5;
+  /* 375px幅では3セル合計が入りきらず、以前は値の文中で折り返して3行になっていた。
+     flex-wrap を許可し、入らない時はセル単位で2行目に逃がす（セル内の文字を折り返させない）。 */
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 4px 8px;
+  padding: 8px 12px; margin-bottom: 12px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+}
+.m-head-cell { display: flex; flex-direction: column; gap: 2px; font-size: 11px; line-height: 1.3; white-space: nowrap; }
+.m-head-cell b { font-size: 15px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* 文字サイズのセルはボタン3つぶんの幅が必要なので縮ませない。
+   ページ表記と残り時間のセルを優先して1行に保つため、こちらを先に2行目へ逃がす。 */
+.m-head-cell:last-child { flex: none; }
+#m-clock.is-warn { color: var(--warn); }
+
+.m-fs-btn {
+  min-width: 30px; min-height: 30px; padding: 0 6px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  font: inherit; font-size: 12px; cursor: pointer;
+}
+.m-fs-btn:first-child { border-radius: 8px 0 0 8px; }
+.m-fs-btn:last-child { border-radius: 0 8px 8px 0; }
+.m-fs-btn + .m-fs-btn { border-left: 0; }
+.m-fs-btn.is-on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 700; }
+
+#m-qcard { padding-bottom: 8px; }
+.m-flagmark {
+  display: inline-block; margin-bottom: 8px; padding: 2px 10px; border-radius: 999px;
+  background: #fde9a9; color: #7a5b00; font-size: 11px; font-weight: 700;
+}
+.m-flagmark[hidden] { display: none; }
+.m-qtext { font-weight: 700; margin-bottom: 12px; }
+
+#m-choices { display: grid; gap: 8px; }
+.m-choice {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px; min-height: 56px;
+  border: 1px solid var(--line); border-radius: 10px; background: var(--surface);
+  cursor: pointer;
+}
+.m-choice input { width: 22px; height: 22px; flex: none; accent-color: var(--accent); }
+.m-choice:has(input:checked) { border-color: var(--accent); background: #e8f3ec; }
+
+/* 文字サイズ。本文と選択肢だけを変える。ヘッダとフッタは変えない */
+.m-fs-sm .m-qtext, .m-fs-sm .m-choice { font-size: 14px; }
+.m-fs-md .m-qtext, .m-fs-md .m-choice { font-size: 16px; }
+.m-fs-lg .m-qtext, .m-fs-lg .m-choice { font-size: 19px; }
+
+/* 解答中はフッタが本文に重ならないよう底上げする */
+#m-exam { padding-bottom: 76px; }
+
+#m-foot {
+  position: fixed; left: 0; right: 0; bottom: var(--tabh); z-index: 9;
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px;
+  padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+  background: var(--surface); border-top: 1px solid var(--line);
+}
+.m-fbtn {
+  min-height: 44px; padding: 0 2px;
+  border: 1px solid var(--accent); border-radius: 8px;
+  background: var(--surface); color: var(--accent);
+  font: inherit; font-size: 11px; font-weight: 700; cursor: pointer;
+}
+.m-fbtn.is-end { border-color: var(--warn); color: var(--warn); }
+.m-fbtn.is-on { background: #fde9a9; border-color: #d8a600; color: #7a5b00; }
+.m-fbtn:disabled { opacity: .35; cursor: default; }
+
+/* 本文に重なるパネル。解答状況と終了確認で共用する */
+.m-ov {
+  position: fixed; inset: 0; z-index: 20;
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+  background: rgba(29, 35, 32, .45);
+}
+.m-ov[hidden] { display: none; }
+.m-ov-panel {
+  width: 100%; max-width: 420px; max-height: 80vh; overflow-y: auto;
+  padding: 16px; border-radius: 12px; background: var(--surface);
+}
+.m-ov-panel p { margin: 0 0 8px; }
+.m-ov-panel .s-btns { justify-content: flex-end; }
+
+
+.m-ov-grid {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px;
+  margin: 12px 0;
+}
+.m-cell {
+  min-height: 44px;
+  border: 1px solid var(--line); border-radius: 8px;
+  background: var(--surface); color: var(--muted);
+  font: inherit; font-size: 13px; font-variant-numeric: tabular-nums; cursor: pointer;
+}
+.m-cell.is-done { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 700; }
+.m-cell.is-flag { border-color: #d8a600; border-width: 2px; }
+.m-cell.is-now { outline: 3px solid #ffeeb4; }
+
+.m-legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--muted); }
+.m-legend span { display: flex; align-items: center; gap: 4px; }
+.m-sw {
+  width: 14px; height: 14px; border-radius: 4px;
+  border: 1px solid var(--line); background: var(--surface);
+}
+.m-sw.is-done { background: var(--accent); border-color: var(--accent); }
+.m-sw.is-flag { border-color: #d8a600; border-width: 2px; }
+
+.m-bych { list-style: none; margin: 8px 0 0; padding: 0; }
+.m-bych li {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+  padding: 10px 0; border-bottom: 1px solid var(--line);
+}
+.m-bych li:last-child { border-bottom: 0; }
+.m-bych b { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.m-bych b.is-right { color: var(--accent); }
+
+.m-rev { padding: 14px 0; border-bottom: 1px solid var(--line); }
+.m-rev:last-child { border-bottom: 0; }
+.m-rev-h { display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px; }
+.m-rev p { margin: 6px 0; }
