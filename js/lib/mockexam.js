@@ -82,3 +82,29 @@ export function buildExam(questions, chapters, { total = 25, recentIds = [], rnd
   // 章順に並んだままだと本番と違ってしまうので、最後に全体を混ぜる。
   return shuffle(picked, rnd);
 }
+
+// 採点する。未解答（null / undefined）は不正解として数える。
+// 本番も未解答を救済しないため、点数の見え方を本番に合わせる。
+export function gradeExam(examQuestions, answers) {
+  const qs = examQuestions || [];
+  const as = answers || [];
+
+  const details = qs.map((q, i) => {
+    const chosen = Number.isInteger(as[i]) ? as[i] : null;
+    return { q, chosen, ok: chosen === q.answer };
+  });
+
+  const byChapter = [];
+  const index = new Map();
+  for (const d of details) {
+    const no = d.q.chapterNo;
+    let entry = index.get(no);
+    if (!entry) { entry = { chapterNo: no, total: 0, correct: 0 }; index.set(no, entry); byChapter.push(entry); }
+    entry.total += 1;
+    if (d.ok) entry.correct += 1;
+  }
+  byChapter.sort((a, b) => a.chapterNo - b.chapterNo);
+
+  const score = details.filter(d => d.ok).length;
+  return { total: qs.length, score, rate: qs.length ? score / qs.length : 0, byChapter, details };
+}

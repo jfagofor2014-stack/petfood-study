@@ -142,3 +142,50 @@ test('問題が無ければ空配列', () => {
   assert.deepEqual(buildExam([], REAL, { rnd: seeded(1) }), []);
   assert.deepEqual(buildExam(null, REAL, { rnd: seeded(1) }), []);
 });
+
+import { gradeExam } from '../js/lib/mockexam.js';
+
+const GQ = [
+  { id: 'a', chapterNo: 1, answer: 0 },
+  { id: 'b', chapterNo: 1, answer: 3 },
+  { id: 'c', chapterNo: 2, answer: 1 },
+];
+
+test('正解数と正答率を数える', () => {
+  const g = gradeExam(GQ, [0, 3, 1]);
+  assert.equal(g.total, 3);
+  assert.equal(g.score, 3);
+  assert.equal(g.rate, 1);
+});
+
+test('未解答は不正解として数える', () => {
+  const g = gradeExam(GQ, [0, null, undefined]);
+  assert.equal(g.score, 1);
+  assert.equal(g.details[1].chosen, null);
+  assert.equal(g.details[1].ok, false);
+  assert.equal(g.details[2].chosen, null);
+});
+
+test('章別に集計する', () => {
+  const g = gradeExam(GQ, [0, 0, 1]);
+  assert.deepEqual(g.byChapter, [
+    { chapterNo: 1, total: 2, correct: 1 },
+    { chapterNo: 2, total: 1, correct: 1 },
+  ]);
+});
+
+test('章別は章番号の昇順に並ぶ', () => {
+  const qs = [{ id: 'x', chapterNo: 9, answer: 0 }, { id: 'y', chapterNo: 2, answer: 0 }];
+  assert.deepEqual(gradeExam(qs, [0, 0]).byChapter.map(x => x.chapterNo), [2, 9]);
+});
+
+test('全問不正解でも落ちない', () => {
+  const g = gradeExam(GQ, [1, 1, 0]);
+  assert.equal(g.score, 0);
+  assert.equal(g.rate, 0);
+});
+
+test('出題が無ければ0件として返す', () => {
+  const g = gradeExam([], []);
+  assert.deepEqual(g, { total: 0, score: 0, rate: 0, byChapter: [], details: [] });
+});
