@@ -2,6 +2,8 @@
 // 乱数は引数で受け取り、テストを決定的にできるようにする（quizpick.js と同じ流儀）。
 // DOM も storage も触らない。
 
+import { shuffle } from './quizpick.js';
+
 // 章の分量をページ数で測る。本番の章別配分は公表されていないため、
 // 「出題範囲はテキスト全範囲」という公式の説明に沿って分量に比例させる。
 // 章の開始ページはその章の節の最小 page、終了ページは次章の開始ページ-1。
@@ -46,4 +48,37 @@ export function allocateByPages(chapters, total = 25, floor = 1) {
   for (let k = 0; left > 0; k = (k + 1) % order.length, left--) add[order[k]] += 1;
 
   return out.map((v, i) => v + add[i]);
+}
+
+// 章ごとの配分どおりに出題を組み立てる。
+// recentIds（直近の模試で出た問題）は優先的に外すが、25問そろえることを優先する。
+export function buildExam(questions, chapters, { total = 25, recentIds = [], rnd = Math.random } = {}) {
+  const all = questions || [];
+  if (all.length === 0) return [];
+
+  const recent = new Set(recentIds || []);
+  const alloc = allocateByPages(chapters, total);
+  const used = new Set();
+  const picked = [];
+
+  // 「直近に出ていない問題」を先に、「出た問題」を後ろに置く。各群の中は乱数で散らす。
+  // こうすると、前者だけで足りるときは後者から取らずに済む。
+  const ordered = pool => [
+    ...shuffle(pool.filter(q => !recent.has(q.id)), rnd),
+    ...shuffle(pool.filter(q => recent.has(q.id)), rnd),
+  ];
+
+  (chapters || []).forEach((ch, i) => {
+    const pool = ordered(all.filter(q => q.chapterNo === ch.no));
+    for (const q of pool.slice(0, alloc[i] || 0)) { picked.push(q); used.add(q.id); }
+  });
+
+  // ある章の手持ちが配分数に足りなかった分を、章を問わず未採用の問題から補う。
+  if (picked.length < total) {
+    const rest = ordered(all.filter(q => !used.has(q.id)));
+    for (const q of rest.slice(0, total - picked.length)) { picked.push(q); used.add(q.id); }
+  }
+
+  // 章順に並んだままだと本番と違ってしまうので、最後に全体を混ぜる。
+  return shuffle(picked, rnd);
 }

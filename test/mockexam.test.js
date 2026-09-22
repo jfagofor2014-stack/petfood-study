@@ -56,3 +56,89 @@ test('要求数が0以下なら空配列', () => {
   assert.deepEqual(allocateByPages(REAL, 0), []);
   assert.deepEqual(allocateByPages(REAL, -1), []);
 });
+
+import { buildExam } from '../js/lib/mockexam.js';
+
+// 決定的な擬似乱数（quizpick.test.js と同じもの）
+function seeded(seed) {
+  let s = seed;
+  return () => { s = (s * 1103515245 + 12345) % 2147483648; return s / 2147483648; };
+}
+
+// 各章に n 問ずつ用意する。answer は採点テストで使う。
+function makeQuestions(perChapter) {
+  const out = [];
+  perChapter.forEach((n, idx) => {
+    const chapterNo = idx + 1;
+    for (let i = 1; i <= n; i++) {
+      out.push({
+        id: `q${chapterNo}-${i}`,
+        sectionId: `s${chapterNo}`,
+        chapterNo,
+        answer: 0,
+        choices: ['あ', 'い', 'う', 'え'],
+      });
+    }
+  });
+  return out;
+}
+
+const PLENTY = makeQuestions([13, 25, 20, 22, 14, 24, 26, 26, 23, 10]);
+
+const countByChapter = set => {
+  const m = new Map();
+  for (const q of set) m.set(q.chapterNo, (m.get(q.chapterNo) || 0) + 1);
+  return [...m.keys()].sort((a, b) => a - b).map(no => m.get(no));
+};
+
+test('25問が出題され、章別の内訳が配分どおりになる', () => {
+  const set = buildExam(PLENTY, REAL, { rnd: seeded(1) });
+  assert.equal(set.length, 25);
+  assert.deepEqual(countByChapter(set), [1, 3, 3, 2, 2, 3, 2, 3, 4, 2]);
+});
+
+test('同じ問題が二度出ない', () => {
+  const set = buildExam(PLENTY, REAL, { rnd: seeded(2) });
+  assert.equal(new Set(set.map(q => q.id)).size, set.length);
+});
+
+test('乱数を注入すれば結果は決定的になる', () => {
+  const a = buildExam(PLENTY, REAL, { rnd: seeded(7) }).map(q => q.id);
+  const b = buildExam(PLENTY, REAL, { rnd: seeded(7) }).map(q => q.id);
+  assert.deepEqual(a, b);
+});
+
+test('直近に出た問題は避けられる', () => {
+  // 第2章は手持ち25問・配分3問。20問を直近扱いにしても、残り5問から選べるはず。
+  const recentIds = PLENTY.filter(q => q.chapterNo === 2).slice(0, 20).map(q => q.id);
+  const set = buildExam(PLENTY, REAL, { recentIds, rnd: seeded(3) });
+  const ch2 = set.filter(q => q.chapterNo === 2).map(q => q.id);
+  assert.equal(ch2.length, 3);
+  assert.ok(ch2.every(id => !recentIds.includes(id)), `避けられていない: ${ch2}`);
+});
+
+test('避けきれないときは直近に出た問題からも出す', () => {
+  // 全問を直近扱いにしても、25問そろえることを優先する。
+  const recentIds = PLENTY.map(q => q.id);
+  const set = buildExam(PLENTY, REAL, { recentIds, rnd: seeded(4) });
+  assert.equal(set.length, 25);
+});
+
+test('ある章の手持ちが足りなければ他章から補う', () => {
+  // 第9章は配分4問だが1問しか無い。不足3問は他章から補われ、合計は25問になる。
+  const scarce = makeQuestions([13, 25, 20, 22, 14, 24, 26, 26, 1, 10]);
+  const set = buildExam(scarce, REAL, { rnd: seeded(5) });
+  assert.equal(set.length, 25);
+  assert.equal(set.filter(q => q.chapterNo === 9).length, 1);
+});
+
+test('全体が25問に満たなければあるだけ返す', () => {
+  const few = makeQuestions([1, 1, 1, 0, 0, 0, 0, 0, 0, 0]);
+  const set = buildExam(few, REAL, { rnd: seeded(6) });
+  assert.equal(set.length, 3);
+});
+
+test('問題が無ければ空配列', () => {
+  assert.deepEqual(buildExam([], REAL, { rnd: seeded(1) }), []);
+  assert.deepEqual(buildExam(null, REAL, { rnd: seeded(1) }), []);
+});
