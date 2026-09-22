@@ -23,8 +23,10 @@ function readJSON(storage, key, fallback) {
 
 // 中断データとして妥当な形かを検査する。
 // 3つの配列の長さが食い違うと画面側が範囲外を読んで落ちるため、ここで弾く。
+// startedAt は ISO 8601 形式の文字列で、時刻の解析に使われるため必須で検査する。
 function isValidActive(a) {
   if (!isPlainObject(a) || a.v !== STATE_VERSION) return false;
+  if (typeof a.startedAt !== 'string') return false;
   if (!Array.isArray(a.questionIds) || a.questionIds.length === 0) return false;
   const n = a.questionIds.length;
   if (!Array.isArray(a.answers) || a.answers.length !== n) return false;
@@ -88,7 +90,10 @@ export function createMockState(storage) {
     },
 
     exportAll() {
-      return { active: readJSON(storage, K_ACTIVE, null), history: readHistory() };
+      // active も history と同じく、読み出し値を検査してから返す。
+      // 壊れた中断データがストレージにあれば null として外へ出す。
+      const a = readJSON(storage, K_ACTIVE, null);
+      return { active: isValidActive(a) ? a : null, history: readHistory() };
     },
 
     // 妥当な部分だけを取り込む。オブジェクト以外なら何も書かず既存を保つ。

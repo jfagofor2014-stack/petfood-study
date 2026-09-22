@@ -138,3 +138,37 @@ test('オブジェクト以外を読み込んでも既存を壊さない', () =>
   m.importAll([]);
   assert.equal(m.history().length, 1);
 });
+
+test('saveActive が startedAt を欠く状態を拒否して null を返す', () => {
+  const m = createMockState(fakeStorage());
+  const badActive = active();
+  delete badActive.startedAt;
+  const result = m.saveActive(badActive);
+  assert.equal(result, null, 'saveActive は null を返すべき');
+  assert.equal(m.getActive(), null, 'getActive も null を返すべき');
+});
+
+test('saveActive が startedAt が文字列でない状態を拒否する', () => {
+  const m = createMockState(fakeStorage());
+  // 数値の場合
+  assert.equal(m.saveActive(active({ startedAt: 1234567890 })), null);
+  // null の場合
+  assert.equal(m.saveActive(active({ startedAt: null })), null);
+  // オブジェクトの場合
+  assert.equal(m.saveActive(active({ startedAt: {} })), null);
+  // 配列の場合
+  assert.equal(m.saveActive(active({ startedAt: [] })), null);
+});
+
+test('exportAll で壊れた中断データを null として返す', () => {
+  const m = createMockState(fakeStorage({ 'pfs:mock': '{"v":1,"questionIds":["q1"]}' }));
+  // startedAt が欠けている壊れたデータなので exportAll().active は null であるべき
+  assert.equal(m.exportAll().active, null);
+});
+
+test('exportAll で妥当な中断データを返す', () => {
+  const m = createMockState(fakeStorage());
+  m.saveActive(active());
+  const exported = m.exportAll();
+  assert.deepEqual(exported.active, active(), 'exportAll は妥当な中断データを返すべき');
+});
