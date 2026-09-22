@@ -8,12 +8,16 @@ export const RATE_MAX = 2.0;
 export const RATE_STEP = 0.1;
 const PAUSE_MAX = 2000;
 
+// 模試画面の文字サイズ。本番のCBTは5段階だが、スマホでは差が出ないので3段階にする。
+export const FONT_SIZES = Object.freeze(['sm', 'md', 'lg']);
+
 export const DEFAULTS = Object.freeze({
   rate: 1.0,
   voiceURI: null,
   pauseMs: 200,
   keepAwake: true,
   autoNextSection: true,
+  mockFontSize: 'md',
 });
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
@@ -37,6 +41,9 @@ function normalize(patch, base) {
   }
   if ('keepAwake' in patch) out.keepAwake = Boolean(patch.keepAwake);
   if ('autoNextSection' in patch) out.autoNextSection = Boolean(patch.autoNextSection);
+  if ('mockFontSize' in patch) {
+    out.mockFontSize = FONT_SIZES.includes(patch.mockFontSize) ? patch.mockFontSize : DEFAULTS.mockFontSize;
+  }
 
   return out;
 }

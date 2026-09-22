@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createSettings, DEFAULTS, RATE_MIN, RATE_MAX } from '../js/lib/settings.js';
+import { FONT_SIZES } from '../js/lib/settings.js';
 
 function fakeStorage(seed = {}) {
   const m = new Map(Object.entries(seed));
@@ -93,4 +94,26 @@ test('配列を set しても落ちず、設定が変わらない', () => {
   const before = s.get();
   assert.doesNotThrow(() => s.set([]));
   assert.deepEqual(s.get(), before);
+});
+
+test('文字サイズの既定は中', () => {
+  const s = createSettings(fakeStorage());
+  assert.equal(s.get().mockFontSize, 'md');
+});
+
+test('文字サイズは3段階', () => {
+  assert.deepEqual([...FONT_SIZES], ['sm', 'md', 'lg']);
+});
+
+test('文字サイズを保存できる', () => {
+  const s = createSettings(fakeStorage());
+  assert.equal(s.set({ mockFontSize: 'lg' }).mockFontSize, 'lg');
+  assert.equal(s.get().mockFontSize, 'lg');
+});
+
+test('知らない文字サイズは既定に丸める', () => {
+  const s = createSettings(fakeStorage());
+  assert.equal(s.set({ mockFontSize: 'xl' }).mockFontSize, 'md');
+  assert.equal(s.set({ mockFontSize: null }).mockFontSize, 'md');
+  assert.equal(s.set({ mockFontSize: 3 }).mockFontSize, 'md');
 });
