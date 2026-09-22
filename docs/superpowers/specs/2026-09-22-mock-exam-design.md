@@ -257,7 +257,7 @@
 | `js/views/settings.js` | 「進捗をリセット」で `mockState.reset()` も呼ぶ。学習データの書き出し／読み込みに模試の履歴を含める |
 | `js/lib/settings.js` | 文字サイズ `mockFontSize`（`'sm' \| 'md' \| 'lg'`、既定 `'md'`）を追加。範囲外は既定に丸める |
 | `css/style.css` | 模試用のスタイル。ヘッダ・フッタの固定、オーバーレイ、文字サイズの3段階 |
-| `sw.js` | `CACHE` を `pfs-v2` に上げ、`ASSETS` に新規3ファイルを追加する |
+| `sw.js` | `CACHE` を `pfs-v3` に上げ、`ASSETS` に新規3ファイルを追加する |
 
 `index.html` は変更しない（画面は動的に描画するため）。
 

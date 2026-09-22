@@ -104,7 +104,9 @@ export function createMockState(storage) {
     importAll(obj) {
       if (!isPlainObject(obj)) return;
       if (Array.isArray(obj.history)) {
-        storage.setItem(K_HIST, JSON.stringify(obj.history.filter(isValidEntry)));
+        // 取り込む履歴にも HISTORY_MAX を適用する。外部ファイル由来で
+        // pfs:mockhist が無制限に膨らまないようにするため。
+        storage.setItem(K_HIST, JSON.stringify(obj.history.filter(isValidEntry).slice(0, HISTORY_MAX)));
       }
       if (isValidActive(obj.active)) {
         storage.setItem(K_ACTIVE, JSON.stringify(obj.active));

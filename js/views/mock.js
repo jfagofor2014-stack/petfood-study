@@ -45,6 +45,7 @@ export function renderMock(root, ctx, nav) {
   let exam = null;
   let timer = null;
   let lastSaved = 0;
+  let lastTick = 0;
 
   const $ = id => root.querySelector('#' + id);
 
@@ -209,7 +210,12 @@ export function renderMock(root, ctx, nav) {
       const i = exam.active.at;
       exam.active.flags[i] = !exam.active.flags[i];
       save();
-      drawQuestion();
+      // 「後で見直す」は固定フッタのボタンで、スクロールした状態のまま押される。
+      // drawQuestion() で全体を再描画すると window.scrollTo(0, 0) と選択肢の
+      // innerHTML 再構築が走り、読み位置とフォーカスを失ってしまう。
+      // フラグの切り替えはバッジとボタンの見た目だけを更新すれば足りる。
+      $('m-flagmark').hidden = !exam.active.flags[i];
+      $('m-flag').classList.toggle('is-on', Boolean(exam.active.flags[i]));
     });
 
     for (const b of root.querySelectorAll('.m-fs-btn')) {
@@ -260,7 +266,7 @@ export function renderMock(root, ctx, nav) {
     const el = $('m-clock');
     if (!el) return;
     el.textContent = mmss(exam.active.remainingMs);
-    el.classList.toggle('is-warn', exam.active.remainingMs <= WARN_MS);
+    el.classList.toggle('is-warn', exam.active.remainingMs < WARN_MS);
   }
 
   function drawQuestion() {
@@ -318,6 +324,9 @@ export function renderMock(root, ctx, nav) {
   // 実時間で減らし続けると着信ひとつで模試が潰れてしまう。
   function startTimer() {
     stopTimer();
+    // 基準時刻を今にリセットする。可視に戻るたびにここを通るので、
+    // document.hidden で止まっていた間の時間は自然と引かれない。
+    lastTick = Date.now();
     timer = setInterval(tick, 1000);
   }
 
@@ -328,12 +337,19 @@ export function renderMock(root, ctx, nav) {
   function tick() {
     if (!exam) { stopTimer(); return; }
 
-    exam.active.remainingMs = Math.max(0, exam.active.remainingMs - 1000);
+    // setInterval(tick, 1000) は1000ms以上の間隔でしか発火しないため、
+    // 固定で1000を引くと壁時計よりタイマーが遅れる。前回tickからの
+    // 実経過ミリ秒を引くことで本番の時間感覚に合わせる。
+    const now = Date.now();
+    const delta = now - lastTick;
+    lastTick = now;
+    exam.active.remainingMs = Math.max(0, exam.active.remainingMs - delta);
     drawClock();
     if (Date.now() - lastSaved >= SAVE_EVERY_MS) save();
 
     if (exam.active.remainingMs === 0) {
-      save();
+      // 直後に finish() の clearActive() で消される値をここで書く必要はない。
+      // 「残り0の中断データ」が一瞬だけ存在する窓を作らないよう、保存しない。
       finish(true);
     }
   }
@@ -356,16 +372,25 @@ export function renderMock(root, ctx, nav) {
 
     // 模試の正誤も既存の成績に記録する。
     // こうすると間違えた問題がそのまま「苦手な問題を解く」に流れる。
-    for (const d of graded.details) quizResults.record(d.q.id, d.ok);
+    // ここから先は27回の同期ストレージ書き込み（record 25回＋pushHistory 1回）が連続する。
+    // 容量超過などで途中の setItem が例外を投げても、60分かけて解いた採点結果は
+    // 必ず画面に表示したいので、保存の失敗は握りつぶして先へ進む。
+    try {
+      for (const d of graded.details) quizResults.record(d.q.id, d.ok);
 
-    mockState.pushHistory({
-      finishedAt: new Date().toISOString(),
-      score: graded.score,
-      total: graded.total,
-      elapsedMs,
-      byChapter: graded.byChapter,
-      questionIds: qs.map(q => q.id),
-    });
+      mockState.pushHistory({
+        finishedAt: new Date().toISOString(),
+        score: graded.score,
+        total: graded.total,
+        elapsedMs,
+        byChapter: graded.byChapter,
+        questionIds: qs.map(q => q.id),
+      });
+    } catch {
+      // 採点結果の保存に失敗しても、結果画面の表示は続ける（上のコメント参照）。
+    }
+    // removeItem は容量制限に掛からないため try の外でよい。中断データを必ず消し、
+    // 「残り0の中断データ」が残って再開時に再採点される事態を避ける。
     mockState.clearActive();
     exam = null;
 
@@ -417,6 +442,10 @@ export function renderMock(root, ctx, nav) {
     }
     $('m-again').addEventListener('click', startExam);
     $('m-back').addEventListener('click', () => nav.showTab('quiz'));
+
+    // 最後の問題を解いた位置のまま結果画面に来ると途中から表示されてしまうため、
+    // drawHome / drawExam / drawQuestion と同様に先頭へ戻す。
+    window.scrollTo(0, 0);
   }
 
   // 見直し1件分。ここでは解答中と違い、章・ページ・正解・解説を全て出す。

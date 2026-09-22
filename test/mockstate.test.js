@@ -152,6 +152,15 @@ test('書き出しと読み込みが往復する', () => {
   assert.deepEqual(b.history(), [entry()]);
 });
 
+test('importAll は取り込む履歴にも10件の上限を適用する', () => {
+  const many = Array.from({ length: 30 }, (_, i) => entry({ score: i }));
+  const m = createMockState(fakeStorage());
+  m.importAll({ history: many });
+  assert.equal(m.history().length, 10);
+  // 新しい順（配列の先頭）から10件が残ること。
+  assert.deepEqual(m.history().map(e => e.score), many.slice(0, 10).map(e => e.score));
+});
+
 test('オブジェクト以外を読み込んでも既存を壊さない', () => {
   const m = createMockState(fakeStorage());
   m.pushHistory(entry());

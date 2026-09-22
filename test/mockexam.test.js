@@ -52,6 +52,10 @@ test('章数より要求数が少ないときは最低1問をあきらめて比�
   assert.ok(got.every(n => n >= 0));
 });
 
+test('floor を明示的に渡しても合計は要求数に一致する', () => {
+  assert.equal(allocateByPages(REAL, 25, 0).reduce((a, b) => a + b, 0), 25);
+});
+
 test('要求数が0以下なら空配列', () => {
   assert.deepEqual(allocateByPages(REAL, 0), []);
   assert.deepEqual(allocateByPages(REAL, -1), []);
