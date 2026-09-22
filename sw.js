@@ -1,7 +1,7 @@
 // アプリ本体だけをキャッシュする。教材データは IndexedDB にあるため対象外。
 // アプリのファイルを更新したら CACHE の版番号を上げること。
 
-const CACHE = 'pfs-v2';
+const CACHE = 'pfs-v3';
 
 const ASSETS = [
   './',
