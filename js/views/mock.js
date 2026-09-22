@@ -2,11 +2,21 @@
 // 即時採点する既存のテスト画面（quiz.js）とは別物として作る。
 // 本番のCBT画面（ヘッダのページ表記と残り時間、フッタの5ボタン、解答状況のパネル）に合わせる。
 
-import { buildExam } from '../lib/mockexam.js';
+import { buildExam, gradeExam } from '../lib/mockexam.js';
 import { escapeHtml as esc } from '../lib/html.js';
 
 const TOTAL = 25;
 const LIMIT_MS = 60 * 60 * 1000;
+
+// 残りがこれを切ったら時計を赤くする。本番のCBTも残り時間を赤字で見せている。
+const WARN_MS = 5 * 60 * 1000;
+
+const mmss = ms => {
+  const total = Math.max(0, Math.round(ms / 1000));
+  const m = String(Math.floor(total / 60)).padStart(2, '0');
+  const s = String(total % 60).padStart(2, '0');
+  return `${m}:${s}`;
+};
 
 const minutesLeft = ms => Math.max(0, Math.ceil(ms / 60000));
 
@@ -18,8 +28,12 @@ const fmtDate = iso => {
 const fmtElapsed = ms => `${Math.max(0, Math.round(ms / 60000))}分`;
 
 export function renderMock(root, ctx, nav) {
-  const { book, mockState } = ctx;
+  const { book, mockState, settings } = ctx;
   const questions = book.questions || [];
+
+  // 解答中だけ中身が入る。{ active: 中断データ, qs: 出題中の問題 }
+  // active は mockState から読んだものをそのまま持ち回り、変更のたびに保存する。
+  let exam = null;
 
   const $ = id => root.querySelector('#' + id);
 
@@ -76,7 +90,7 @@ export function renderMock(root, ctx, nav) {
     `;
 
     if ($('m-start')) $('m-start').addEventListener('click', startExam);
-    if ($('m-resume')) $('m-resume').addEventListener('click', drawHome);
+    if ($('m-resume')) $('m-resume').addEventListener('click', drawExam);
     if ($('m-discard')) $('m-discard').addEventListener('click', () => {
       if (!confirm('中断した模試を破棄します。よろしいですか。')) return;
       mockState.clearActive();
@@ -104,7 +118,167 @@ export function renderMock(root, ctx, nav) {
     });
     if (!saved) return;
 
-    drawHome();
+    drawExam();
+  }
+
+  // ---- 解答中 --------------------------------------------------------
+  function drawExam() {
+    const active = mockState.getActive();
+    const qs = resolveActive(active);
+    // 中断データが無い・使えないときはトップへ戻す。ここで落とさない。
+    if (!qs) { drawHome(); return; }
+    exam = { active, qs };
+
+    root.innerHTML = `
+      <div id="m-exam" class="m-fs-${esc(settings.get().mockFontSize)}">
+        <div id="m-head">
+          <div class="m-head-cell"><span class="muted">現在</span><b id="m-page"></b></div>
+          <div class="m-head-cell"><span class="muted">残り時間</span><b id="m-clock"></b></div>
+          <div class="m-head-cell">
+            <span class="muted">文字サイズ</span>
+            <span id="m-fs">
+              <button class="m-fs-btn" data-fs="sm">小</button
+              ><button class="m-fs-btn" data-fs="md">中</button
+              ><button class="m-fs-btn" data-fs="lg">大</button>
+            </span>
+          </div>
+        </div>
+
+        <div class="card" id="m-qcard">
+          <div class="m-flagmark" id="m-flagmark" hidden>後で見直す</div>
+          <div class="m-qtext" id="m-qtext"></div>
+          <div id="m-choices"></div>
+        </div>
+
+        <div id="m-foot">
+          <button class="m-fbtn" id="m-status">解答状況</button>
+          <button class="m-fbtn is-end" id="m-end">試験終了</button>
+          <button class="m-fbtn" id="m-flag">後で見直す</button>
+          <button class="m-fbtn" id="m-prev">前の問題</button>
+          <button class="m-fbtn" id="m-next">次の問題</button>
+        </div>
+      </div>
+
+      <div class="m-ov" id="m-confirm" hidden>
+        <div class="m-ov-panel">
+          <p>試験を終了します。よろしいですか？</p>
+          <p class="muted" id="m-confirm-note"></p>
+          <div class="s-btns">
+            <button class="btn ghost sm" id="m-cancel">キャンセル</button>
+            <button class="btn sm" id="m-ok">OK</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    $('m-choices').addEventListener('change', e => {
+      const r = e.target.closest('input[type="radio"]');
+      if (!r) return;
+      exam.active.answers[exam.active.at] = Number(r.value);
+      save();
+    });
+
+    $('m-prev').addEventListener('click', () => move(-1));
+    $('m-next').addEventListener('click', () => move(1));
+
+    $('m-flag').addEventListener('click', () => {
+      const i = exam.active.at;
+      exam.active.flags[i] = !exam.active.flags[i];
+      save();
+      drawQuestion();
+    });
+
+    for (const b of root.querySelectorAll('.m-fs-btn')) {
+      b.addEventListener('click', () => {
+        const fs = settings.set({ mockFontSize: b.dataset.fs }).mockFontSize;
+        $('m-exam').className = `m-fs-${fs}`;
+        drawFontButtons();
+      });
+    }
+
+    $('m-end').addEventListener('click', () => {
+      const blank = exam.active.answers.filter(a => !Number.isInteger(a)).length;
+      $('m-confirm-note').textContent = blank ? `未解答が${blank}問あります。` : '';
+      $('m-confirm').hidden = false;
+    });
+    $('m-cancel').addEventListener('click', () => { $('m-confirm').hidden = true; });
+    $('m-ok').addEventListener('click', () => finish(false));
+
+    drawFontButtons();
+    drawQuestion();
+  }
+
+  function drawFontButtons() {
+    const now = settings.get().mockFontSize;
+    for (const b of root.querySelectorAll('.m-fs-btn')) {
+      b.classList.toggle('is-on', b.dataset.fs === now);
+    }
+  }
+
+  function drawClock() {
+    const el = $('m-clock');
+    if (!el) return;
+    el.textContent = mmss(exam.active.remainingMs);
+    el.classList.toggle('is-warn', exam.active.remainingMs <= WARN_MS);
+  }
+
+  function drawQuestion() {
+    const { active, qs } = exam;
+    const i = active.at;
+    const q = qs[i];
+
+    $('m-page').textContent = `${qs.length}ページ中 ${i + 1}ページ目`;
+    $('m-flagmark').hidden = !active.flags[i];
+    // 章番号もページ番号も出さない。本番では得られない情報であり、ヒントになってしまう。
+    $('m-qtext').textContent = q.question;
+    $('m-choices').innerHTML = q.choices.map((c, k) => `
+      <label class="m-choice">
+        <input type="radio" name="m-a" value="${k}" ${active.answers[i] === k ? 'checked' : ''}>
+        <span>${esc(c)}</span>
+      </label>`).join('');
+
+    $('m-prev').disabled = i === 0;
+    $('m-next').disabled = i === qs.length - 1;
+    $('m-flag').classList.toggle('is-on', Boolean(active.flags[i]));
+
+    drawClock();
+    window.scrollTo(0, 0);
+  }
+
+  function move(delta) {
+    const next = exam.active.at + delta;
+    if (next < 0 || next >= exam.qs.length) return;
+    exam.active.at = next;
+    save();
+    drawQuestion();
+  }
+
+  function save() {
+    mockState.saveActive(exam.active);
+  }
+
+  // ---- 採点 ----------------------------------------------------------
+  function finish(timedOut) {
+    const graded = gradeExam(exam.qs, exam.active.answers);
+    mockState.clearActive();
+    exam = null;
+    drawResult(graded, timedOut);
+  }
+
+  function drawResult(graded, timedOut) {
+    root.innerHTML = `
+      <div class="card">
+        ${timedOut ? '<div class="error">時間切れです。</div>' : ''}
+        <div class="q-score">${esc(graded.score)} / ${esc(graded.total)} 問正解</div>
+        <div class="bar" style="margin-top:10px"><i style="width:${Math.round(graded.rate * 100)}%"></i></div>
+      </div>
+      <div class="s-btns">
+        <button class="btn" id="m-again">もう一度挑戦</button>
+        <button class="btn ghost" id="m-back">テストに戻る</button>
+      </div>
+    `;
+    $('m-again').addEventListener('click', startExam);
+    $('m-back').addEventListener('click', () => nav.showTab('quiz'));
   }
 
   drawHome();
