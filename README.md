@@ -72,7 +72,7 @@ python3 -m http.server 8765   # ローカルで動かす（http://localhost:8765
 | `index.html` / `css/` | 画面の骨格とスタイル |
 | `js/app.js` | 画面の切り替えなどアプリ全体の起点 |
 | `js/lib/` | 純粋ロジック（book / db / flashcards / html / mockexam / mockstate / progress / quizpick / quizresults / safestorage / schema / sentences / settings / speech / wakelock）。すべてテストがある。追加分は flashcards＝カードの山の進み方、mockexam＝模擬試験の出題と採点、mockstate＝中断中の模試と受験履歴の保存、safestorage＝localStorage の書き込み失敗を握って画面へ知らせる包み |
-| `js/views/` | 4タブ＋取り込み画面（onboarding / player / toc / quiz / settings）の DOM 描画 |
+| `js/views/` | 4タブ＋取り込み画面＋テストタブ内の2画面（onboarding / player / toc / quiz / settings / mock / flash）の DOM 描画 |
 | `sw.js` / `manifest.json` / `icons/` | PWA（オフライン動作・ホーム画面追加） |
 | `test/` | `node --test` によるユニットテスト |
 | `tools/` | 教材データ（`petfood-data.json`）を手元のテキストから作るスクリプト（`ocr.py` / `build_data.py`）。詳細は [tools/README.md](tools/README.md) |
