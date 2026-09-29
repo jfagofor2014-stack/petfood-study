@@ -1,4 +1,5 @@
 import { loadBook } from './lib/db.js';
+import { createSafeStorage } from './lib/safestorage.js';
 import { createProgress } from './lib/progress.js';
 import { createSettings } from './lib/settings.js';
 import { createQuizResults } from './lib/quizresults.js';
@@ -18,14 +19,36 @@ const el = {
   view: document.getElementById('view'),
   tabs: document.getElementById('tabs'),
   rate: document.getElementById('topbar-rate'),
+  storageWarn: document.getElementById('storage-warn'),
 };
+
+// 保存に失敗している間だけ帯を出す。次の書き込みが成功したら自動的に消えるので、
+// 空き容量を作れば利用者が自分で気づける。
+function showStorageWarning(failing) {
+  if (el.storageWarn) el.storageWarn.hidden = !failing;
+}
+
+// 環境によっては localStorage の参照そのものが投げる（Cookie やサイトデータが
+// ブロックされている場合）。包みに入る前に落ちてしまうので、ここで受け止める。
+// null を渡せば包みは「常に保存に失敗している」扱いになり、アプリは起動を続ける。
+function rawStorage() {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+// localStorage は上限超過やプライベートモードで例外を投げる。ここで1回包んでおくと、
+// 進捗・設定・成績・模試の全てが守られ、起動時の pruneTo で白画面になることも防げる。
+const store = createSafeStorage(rawStorage(), showStorageWarning);
 
 const ctx = {
   book: null,
-  progress: createProgress(localStorage),
-  settings: createSettings(localStorage),
-  quizResults: createQuizResults(localStorage),
-  mockState: createMockState(localStorage),
+  progress: createProgress(store),
+  settings: createSettings(store),
+  quizResults: createQuizResults(store),
+  mockState: createMockState(store),
   speech: createSpeech({ synth: window.speechSynthesis, UtteranceCtor: window.SpeechSynthesisUtterance }),
   wakeLock: createWakeLock(navigator),
   tab: 'player',
