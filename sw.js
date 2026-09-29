@@ -1,7 +1,7 @@
 // アプリ本体だけをキャッシュする。教材データは IndexedDB にあるため対象外。
 // アプリのファイルを更新したら CACHE の版番号を上げること。
 
-const CACHE = 'pfs-v3';
+const CACHE = 'pfs-v4';
 
 const ASSETS = [
   './',
@@ -16,6 +16,7 @@ const ASSETS = [
   'js/lib/progress.js',
   'js/lib/quizpick.js',
   'js/lib/quizresults.js',
+  'js/lib/safestorage.js',
   'js/lib/schema.js',
   'js/lib/sentences.js',
   'js/lib/settings.js',

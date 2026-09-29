@@ -312,3 +312,14 @@ select { width: 100%; min-height: 48px; padding: 0 10px; font: inherit;
 .m-rev:last-child { border-bottom: 0; }
 .m-rev-h { display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px; }
 .m-rev p { margin: 6px 0; }
+
+/* 保存できていないことを知らせる帯 */
+.warn-bar {
+  display: block;
+  position: sticky; top: 44px; z-index: 9;
+  padding: 10px 16px;
+  background: #fbeae6; color: var(--warn);
+  border-bottom: 1px solid var(--warn);
+  font-size: 13px; font-weight: 700; line-height: 1.5;
+}
+.warn-bar[hidden] { display: none; }
