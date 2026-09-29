@@ -326,3 +326,14 @@ select { width: 100%; min-height: 48px; padding: 0 10px; font: inherit;
   font-size: 13px; font-weight: 700; line-height: 1.5;
 }
 .warn-bar[hidden] { display: none; }
+
+/* フラッシュカード */
+.f-card { min-height: 180px; }
+.f-q { font-weight: 700; font-size: 17px; line-height: 1.7; }
+.f-sep { border: 0; border-top: 1px solid var(--line); margin: 14px 0; }
+.f-a { font-weight: 700; color: var(--accent); margin-bottom: 8px; }
+
+#f-ctrl { margin-bottom: 12px; }
+#f-ctrl .btn { width: 100%; }
+.f-judge { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.f-judge[hidden] { display: none; }
