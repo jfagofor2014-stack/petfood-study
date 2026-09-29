@@ -10,6 +10,7 @@ import { openPlayerAt } from './player.js';
 import { escapeHtml as esc } from '../lib/html.js';
 
 const WEAK_MAX = 20;
+const QUIT_GUARD_MS = 400;
 
 export function renderFlash(root, ctx, nav) {
   const { book, quizResults } = ctx;
@@ -19,6 +20,9 @@ export function renderFlash(root, ctx, nav) {
 
   let deck = null;
   let shown = false;        // 裏を見せているか
+  let locked = false;       // 判定の二重タップ防止
+  let recorded = new Set(); // この山で成績に記録済みのカードID
+  let drawnAt = 0;          // カードを描いた時刻。直後の誤タップで「やめる」を通さないため
 
   menu();
 
@@ -89,11 +93,18 @@ export function renderFlash(root, ctx, nav) {
     if (!cards.length) return;
     deck = createDeck(cards);
     shown = false;
+    // 「あやしい」は山の最後に戻り、覚えるまで何度も出る。そのたびに成績へ
+    // 記録すると、1枚で手こずっただけで attempts が膨らみ正答率が不自然に下がって、
+    // テスト・模試と共有している苦手リストの上位をカードが占拠してしまう。
+    // そこで1回の山につき1枚1回だけ記録し、最初の判断をその回の成績とする。
+    recorded = new Set();
     drawCard();
   }
 
   function drawCard() {
     if (deck.isDone()) { drawResult(); return; }
+    locked = false;
+    drawnAt = Date.now();
 
     const card = deck.current();
     const total = deck.size();
@@ -118,7 +129,13 @@ export function renderFlash(root, ctx, nav) {
     // 教材由来の文字列は textContent で入れる。エスケープの取りこぼしが起きない。
     $('f-q').textContent = card.question;
     drawControls(card);
-    $('f-quit').addEventListener('click', menu);
+    // 判定の二重タップは、1回目で画面が差し替わるため2回目が新しい画面の
+    // 「やめる」に当たる。locked だけでは（drawCard が解錠するので）防げないため、
+    // 描いた直後の短い間は「やめる」を受け付けない。
+    $('f-quit').addEventListener('click', () => {
+      if (Date.now() - drawnAt < QUIT_GUARD_MS) return;
+      menu();
+    });
     window.scrollTo(0, 0);
   }
 
@@ -155,8 +172,16 @@ export function renderFlash(root, ctx, nav) {
   }
 
   function judge(card, ok) {
+    // 判定すると裏面が畳まれてボタンが上にずれる。素早い2回目のタップが
+    // 「やめる」に当たって山ごと捨てられないよう、quiz.js と同じく錠をかける。
+    if (locked) return;
+    locked = true;
     // 自己申告を既存の成績に流す。テスト・模試・カードで同じ苦手リストを共有する。
-    quizResults.record(card.id, ok);
+    // 記録は1山につき1枚1回だけ（理由は start() のコメント）。山の進み方は毎回動かす。
+    if (!recorded.has(card.id)) {
+      quizResults.record(card.id, ok);
+      recorded.add(card.id);
+    }
     if (ok) deck.known(); else deck.unsure();
     shown = false;
     drawCard();
@@ -173,7 +198,7 @@ export function renderFlash(root, ctx, nav) {
         <div class="muted" style="margin-top:6px">1回で覚えたカード ${first} / ${total}</div>
       </div>
       <div class="s-btns">
-        <button class="btn" id="f-again">もう一度</button>
+        <button class="btn" id="f-again">別のカードを選ぶ</button>
         <button class="btn ghost" id="f-back">テストに戻る</button>
       </div>
     `;

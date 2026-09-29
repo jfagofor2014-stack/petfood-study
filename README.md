@@ -23,6 +23,7 @@
 - 節ごと・章ごと・苦手順の4択確認テスト。成績を記録し、間違えた問題から
   本文の該当箇所へジャンプできる
 - 本番形式の模擬試験（全章から25問・60分・四肢択一、中断と再開、章別の正誤）
+- カードで覚える（選択肢を見ずに思い出す練習。覚えるまで繰り返す）
 - オフライン起動、ホーム画面への追加に対応した PWA
 
 テスト機能に出る問題は**公式の過去問ではなく**、テキストの範囲から作成した
@@ -57,7 +58,7 @@ Android Chrome を想定している（開発・確認は Pixel 8a）。
 ## 開発
 
 ```bash
-npm test                      # ユニットテスト（node --test、130件）
+npm test                      # ユニットテスト（node --test、214件）
 python3 -m http.server 8765   # ローカルで動かす（http://localhost:8765/）
 ```
 
@@ -70,7 +71,7 @@ python3 -m http.server 8765   # ローカルで動かす（http://localhost:8765
 |---|---|
 | `index.html` / `css/` | 画面の骨格とスタイル |
 | `js/app.js` | 画面の切り替えなどアプリ全体の起点 |
-| `js/lib/` | 純粋ロジック（book / db / html / progress / quizpick / quizresults / schema / sentences / settings / speech / wakelock）。すべてテストがある |
+| `js/lib/` | 純粋ロジック（book / db / flashcards / html / mockexam / mockstate / progress / quizpick / quizresults / safestorage / schema / sentences / settings / speech / wakelock）。すべてテストがある。追加分は flashcards＝カードの山の進み方、mockexam＝模擬試験の出題と採点、mockstate＝中断中の模試と受験履歴の保存、safestorage＝localStorage の書き込み失敗を握って画面へ知らせる包み |
 | `js/views/` | 4タブ＋取り込み画面（onboarding / player / toc / quiz / settings）の DOM 描画 |
 | `sw.js` / `manifest.json` / `icons/` | PWA（オフライン動作・ホーム画面追加） |
 | `test/` | `node --test` によるユニットテスト |
