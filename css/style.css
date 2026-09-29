@@ -314,9 +314,12 @@ select { width: 100%; min-height: 48px; padding: 0 10px; font: inherit;
 .m-rev p { margin: 6px 0; }
 
 /* 保存できていないことを知らせる帯 */
+/* sticky にしない。「きく」画面の #p-head と模試の #m-head が同じ top: 44px で止まるため、
+   帯を sticky にすると重なって模試の残り時間（#m-clock）を覆い隠してしまう。
+   通常フローのブロックならスクロールで流れるだけで、既存ヘッダに影響しない。
+   タブを切り替えるたびに画面先頭が表示されるので、毎回目に入る。 */
 .warn-bar {
   display: block;
-  position: sticky; top: 44px; z-index: 9;
   padding: 10px 16px;
   background: #fbeae6; color: var(--warn);
   border-bottom: 1px solid var(--warn);

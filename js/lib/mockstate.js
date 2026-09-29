@@ -60,7 +60,9 @@ export function createMockState(storage) {
       return isValidActive(a) ? a : null;
     },
 
-    // 妥当でない状態は保存しない。保存できなかったことを呼び出し側が分かるよう null を返す。
+    // 妥当でない状態は保存しない。null を返すのは状態の形が妥当でないときだけで、
+    // 保存の成否は返さない（storage は書き込み失敗を投げない包みで渡されるため、
+    // 書き込みに失敗しても非 null が返る。失敗は包みの onChange 経由で画面の帯に出る）。
     saveActive(state) {
       const next = { ...state, v: STATE_VERSION };
       if (!isValidActive(next)) return null;

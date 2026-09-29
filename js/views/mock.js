@@ -128,6 +128,8 @@ export function renderMock(root, ctx, nav) {
       flags: set.map(() => false),
       at: 0,
     });
+    // saveActive が null を返すのは状態の形が壊れているときだけで、保存の失敗ではない
+    // （storage の包みは書き込み失敗を投げず、非 null を返す）。ここで弾くのは形の不正のみ。
     if (!saved) return;
 
     drawExam();
@@ -375,6 +377,7 @@ export function renderMock(root, ctx, nav) {
     // ここから先は27回の同期ストレージ書き込み（record 25回＋pushHistory 1回）が連続する。
     // 容量超過などで途中の setItem が例外を投げても、60分かけて解いた採点結果は
     // 必ず画面に表示したいので、保存の失敗は握りつぶして先へ進む。
+    // ※ storage の包みが例外を出さなくなったため通常は発動しないが、多重防御として残す。
     try {
       for (const d of graded.details) quizResults.record(d.q.id, d.ok);
 
