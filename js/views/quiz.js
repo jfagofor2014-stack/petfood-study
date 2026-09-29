@@ -44,6 +44,10 @@ export function renderQuiz(root, ctx, nav) {
         <p class="muted">答えを見ずに25問を通して解き、最後にまとめて採点します。</p>
       </div>
       <div class="card">
+        <button class="btn" id="q-flash">カードで覚える</button>
+        <p class="muted">選択肢を見ずに思い出す練習です。覚えるまで繰り返します。</p>
+      </div>
+      <div class="card">
         <button class="btn" id="q-weak" ${weak.length ? '' : 'disabled'}>
           苦手な問題を解く（${weak.length}問）
         </button>
@@ -68,6 +72,7 @@ export function renderQuiz(root, ctx, nav) {
     `;
 
     root.querySelector('#q-mock').addEventListener('click', () => nav.showTab('mock'));
+    root.querySelector('#q-flash').addEventListener('click', () => nav.showTab('flash'));
     root.querySelector('#q-weak').addEventListener('click', () => run(weak));
     for (const b of root.querySelectorAll('.q-pick')) {
       b.addEventListener('click', () => {

@@ -12,6 +12,7 @@ import { renderToc } from './views/toc.js';
 import { renderQuiz } from './views/quiz.js';
 import { renderSettings } from './views/settings.js';
 import { renderMock } from './views/mock.js';
+import { renderFlash } from './views/flash.js';
 
 const el = {
   onboarding: document.getElementById('onboarding'),
@@ -57,11 +58,11 @@ const ctx = {
 // 画面モジュールは後続タスクで実装する。未実装のタブは案内だけ出す。
 // 後続タスクはこのオブジェクトに直接キーを足していく（registerView のような
 // 登録用エクスポートは、呼び出し元が存在しないため作らない）。
-const views = { player: renderPlayer, toc: renderToc, quiz: renderQuiz, settings: renderSettings, mock: renderMock };
+const views = { player: renderPlayer, toc: renderToc, quiz: renderQuiz, settings: renderSettings, mock: renderMock, flash: renderFlash };
 
 // タブバーに出さない画面が、どのタブに属して見えるかを決める。
 // 模試はタブを5個に増やさずテストタブの中の画面として扱う。
-const TAB_OF = { mock: 'quiz' };
+const TAB_OF = { mock: 'quiz', flash: 'quiz' };
 
 let teardown = null;
 
