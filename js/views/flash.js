@@ -8,9 +8,18 @@ import { pickForSection, pickForChapter, pickWeak } from '../lib/quizpick.js';
 import { listSections } from '../lib/book.js';
 import { openPlayerAt } from './player.js';
 import { escapeHtml as esc } from '../lib/html.js';
+import { moveFocus } from './a11y.js';
 
 const WEAK_MAX = 20;
 const QUIT_GUARD_MS = 400;
+
+// 山の途中で画面を離れたとき（「この節を読む」・タブ移動）に預けておく場所。
+// 画面を作り直すと renderFlash の中の変数は捨てられるので、モジュールの中に置く。
+// js/views/player.js の pendingOpen と同じ流儀。再読み込みすると消えるが、
+// 節を読みに行って戻る寄り道を救うのが目的なので、それで足りる。
+// { deck, recorded }。recorded（記録済みのカードID）も一緒に預けないと、
+// 再開後に同じカードを二重に成績へ記録してしまう。
+let parked = null;
 
 export function renderFlash(root, ctx, nav) {
   const { book, quizResults } = ctx;
@@ -50,6 +59,10 @@ export function renderFlash(root, ctx, nav) {
         <div class="m-h1">カードで覚える</div>
         <p>選択肢を見ずに思い出す練習です。「あやしい」にしたカードは山の最後に戻り、覚えるまで繰り返します。</p>
       </div>
+      ${parked ? `<div class="card">
+        <button class="btn" id="f-resume">途中の山を続ける（残り${parked.deck.remaining()}枚）</button>
+        <div class="s-btns"><button class="btn danger sm" id="f-discard">この山を捨てる</button></div>
+      </div>` : ''}
       <div class="card">
         <button class="btn" id="f-weak" ${weak.length ? '' : 'disabled'}>
           苦手なカードを覚える（${weak.length}枚）
@@ -75,6 +88,8 @@ export function renderFlash(root, ctx, nav) {
       <button class="btn ghost" id="f-back">テストに戻る</button>
     `;
 
+    if ($('f-resume')) $('f-resume').addEventListener('click', resume);
+    if ($('f-discard')) $('f-discard').addEventListener('click', () => { parked = null; menu(); });
     $('f-weak').addEventListener('click', () => start(weak));
     for (const b of root.querySelectorAll('.q-pick')) {
       b.addEventListener('click', () => {
@@ -86,11 +101,14 @@ export function renderFlash(root, ctx, nav) {
       });
     }
     $('f-back').addEventListener('click', () => nav.showTab('quiz'));
+    // 「やめる」「別のカードを選ぶ」で戻ってくると押したボタンが消えるので、画面の先頭へ移す。
+    moveFocus(root.firstElementChild);
   }
 
   // ---- カード --------------------------------------------------------
   function start(cards) {
     if (!cards.length) return;
+    parked = null;   // 新しい山を始めたら、預けていた山は捨てる
     deck = createDeck(cards);
     shown = false;
     // 「あやしい」は山の最後に戻り、覚えるまで何度も出る。そのたびに成績へ
@@ -98,6 +116,16 @@ export function renderFlash(root, ctx, nav) {
     // テスト・模試と共有している苦手リストの上位をカードが占拠してしまう。
     // そこで1回の山につき1枚1回だけ記録し、最初の判断をその回の成績とする。
     recorded = new Set();
+    drawCard();
+  }
+
+  // 預けた山を戻す。表から描き直す（裏を見ていた途中でも、もう一度めくってもらう）。
+  function resume() {
+    if (!parked) return;
+    deck = parked.deck;
+    recorded = parked.recorded;
+    parked = null;
+    shown = false;
     drawCard();
   }
 
@@ -134,8 +162,12 @@ export function renderFlash(root, ctx, nav) {
     // 描いた直後の短い間は「やめる」を受け付けない。
     $('f-quit').addEventListener('click', () => {
       if (Date.now() - drawnAt < QUIT_GUARD_MS) return;
+      // 「やめる」は意図して捨てる操作なので預けない。
+      deck = null;
+      parked = null;
       menu();
     });
+    moveFocus($('f-q'));
     window.scrollTo(0, 0);
   }
 
@@ -169,6 +201,8 @@ export function renderFlash(root, ctx, nav) {
     });
     $('f-known').addEventListener('click', () => judge(card, true));
     $('f-unsure').addEventListener('click', () => judge(card, false));
+    // 「答えを見る」を押すとそのボタン自体が消えるので、めくった答えへ移す。
+    moveFocus($('f-back-side'));
   }
 
   function judge(card, ok) {
@@ -194,7 +228,7 @@ export function renderFlash(root, ctx, nav) {
 
     root.innerHTML = `
       <div class="card">
-        <div class="q-score">${total}枚を覚えました</div>
+        <div class="q-score" id="f-score">${total}枚を覚えました</div>
         <div class="muted" style="margin-top:6px">1回で覚えたカード ${first} / ${total}</div>
       </div>
       <div class="s-btns">
@@ -204,10 +238,14 @@ export function renderFlash(root, ctx, nav) {
     `;
     $('f-again').addEventListener('click', menu);
     $('f-back').addEventListener('click', () => nav.showTab('quiz'));
+    moveFocus($('f-score'));
     window.scrollTo(0, 0);
   }
 
   // この画面のリスナーは全て root 配下の要素に直接付いているので、
   // app.js が innerHTML を空にすれば一緒に捨てられる。タイマーも持たない。
-  return () => {};
+  // 山の途中で離れる（「この節を読む」・タブ移動）ときだけ、山を預けておく。
+  return () => {
+    if (deck && !deck.isDone()) parked = { deck, recorded };
+  };
 }

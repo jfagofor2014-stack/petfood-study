@@ -13,6 +13,7 @@ import { renderQuiz } from './views/quiz.js';
 import { renderSettings } from './views/settings.js';
 import { renderMock } from './views/mock.js';
 import { renderFlash } from './views/flash.js';
+import { moveFocus } from './views/a11y.js';
 
 const el = {
   onboarding: document.getElementById('onboarding'),
@@ -75,10 +76,19 @@ function showTab(name) {
   for (const b of el.tabs.querySelectorAll('.tab')) {
     b.setAttribute('aria-current', String(b.dataset.tab === highlighted));
   }
+  // 前の画面が #view 自身へフォーカスを移していると、中身を消してもフォーカスが #view に
+  // 残り、描画後の「contains」判定が真になって移し直されない（Safari / Firefox で起きる）。
+  // 先に外しておけば、新しい画面の先頭へ必ず移る。
+  if (document.activeElement === el.view) el.view.blur();
   el.view.innerHTML = '';
   const render = views[name];
   if (render) teardown = render(el.view, ctx, { showTab }) || null;
   else el.view.innerHTML = '<div class="card muted">この画面はまだありません。</div>';
+  // 画面が自分でより具体的な場所（問題文など）へフォーカスを移さなかったときだけ、
+  // 画面の先頭へ移す。タブのボタンにフォーカスが残ったままだと、新しい画面が読まれない。
+  // 移す先は #view 全体ではなく最初の要素にする。名前も役割も無い大きな div へ移すと、
+  // スクリーンリーダーが中身をまとめて読み上げることがあり、「きく」画面は本文が長い。
+  if (!el.view.contains(document.activeElement)) moveFocus(el.view.firstElementChild || el.view);
 }
 
 function startMain(book) {
