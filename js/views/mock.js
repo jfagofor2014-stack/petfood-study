@@ -5,6 +5,7 @@
 import { buildExam, gradeExam } from '../lib/mockexam.js';
 import { escapeHtml as esc } from '../lib/html.js';
 import { openPlayerAt } from './player.js';
+import { moveFocus } from './a11y.js';
 
 const TOTAL = 25;
 const LIMIT_MS = 60 * 60 * 1000;
@@ -46,6 +47,8 @@ export function renderMock(root, ctx, nav) {
   let timer = null;
   let lastSaved = 0;
   let lastTick = 0;
+  // パネル（解答状況・終了確認）を開く前にフォーカスがあった要素。閉じたらそこへ戻す。
+  let returnFocus = null;
 
   const $ = id => root.querySelector('#' + id);
 
@@ -110,6 +113,8 @@ export function renderMock(root, ctx, nav) {
       drawHome();
     });
     $('m-back').addEventListener('click', () => nav.showTab('quiz'));
+    // 「破棄して最初から」で描き直すと押したボタンが消えるので、画面の先頭へ移す。
+    moveFocus(root.firstElementChild);
   }
 
   // 新しい模試を組み立てて中断データとして保存する。
@@ -177,9 +182,9 @@ export function renderMock(root, ctx, nav) {
         </div>
       </div>
 
-      <div class="m-ov" id="m-status-ov" hidden>
+      <div class="m-ov" id="m-status-ov" role="dialog" aria-modal="true" aria-labelledby="m-status-title" hidden>
         <div class="m-ov-panel">
-          <div class="m-h1">解答状況</div>
+          <div class="m-h1" id="m-status-title">解答状況</div>
           <div class="m-ov-grid" id="m-grid"></div>
           <div class="m-legend">
             <span><i class="m-sw is-done"></i>解答済み</span>
@@ -190,9 +195,9 @@ export function renderMock(root, ctx, nav) {
         </div>
       </div>
 
-      <div class="m-ov" id="m-confirm" hidden>
+      <div class="m-ov" id="m-confirm" role="dialog" aria-modal="true" aria-labelledby="m-confirm-title" hidden>
         <div class="m-ov-panel">
-          <p>試験を終了します。よろしいですか？</p>
+          <p id="m-confirm-title">試験を終了します。よろしいですか？</p>
           <p class="muted" id="m-confirm-note"></p>
           <div class="s-btns">
             <button class="btn ghost sm" id="m-cancel">キャンセル</button>
@@ -234,31 +239,48 @@ export function renderMock(root, ctx, nav) {
 
     $('m-status').addEventListener('click', () => {
       drawStatus();
-      $('m-status-ov').hidden = false;
+      openPanel($('m-status-ov'));
     });
-    $('m-status-close').addEventListener('click', () => { $('m-status-ov').hidden = true; });
+    $('m-status-close').addEventListener('click', () => closePanel($('m-status-ov')));
 
     $('m-grid').addEventListener('click', e => {
       const cell = e.target.closest('[data-i]');
       if (!cell) return;
       exam.active.at = Number(cell.dataset.i);
       save();
-      $('m-status-ov').hidden = true;
-      drawQuestion();
+      closePanel($('m-status-ov'));
+      drawQuestion();   // フォーカスは新しい問題文へ移る（drawQuestion の中で移す）
     });
 
     $('m-end').addEventListener('click', () => {
       const blank = exam.active.answers.filter(a => !Number.isInteger(a)).length;
       $('m-confirm-note').textContent = blank ? `未解答が${blank}問あります。` : '';
-      $('m-confirm').hidden = false;
+      openPanel($('m-confirm'));
     });
-    $('m-cancel').addEventListener('click', () => { $('m-confirm').hidden = true; });
+    $('m-cancel').addEventListener('click', () => closePanel($('m-confirm')));
     $('m-ok').addEventListener('click', () => finish(false));
+    for (const ov of [$('m-status-ov'), $('m-confirm')]) {
+      ov.addEventListener('keydown', e => { if (e.key === 'Escape') closePanel(ov); });
+    }
 
     drawFontButtons();
     drawQuestion();
     // 裏で描画された場合（教材取り込み直後など）は、可視に戻ってから動かす。
     if (!document.hidden) startTimer();
+  }
+
+  // パネルをダイアログとして開閉する。開いたらパネルの中へ、閉じたら開く前の場所
+  // （押したボタン）へフォーカスを戻す。解答状況は今の問題のマスへ移すと位置が分かりやすい。
+  function openPanel(ov) {
+    returnFocus = document.activeElement;
+    ov.hidden = false;
+    moveFocus(ov.querySelector('.is-now') || ov.querySelector('button'));
+  }
+
+  function closePanel(ov) {
+    ov.hidden = true;
+    if (returnFocus && root.contains(returnFocus)) moveFocus(returnFocus);
+    returnFocus = null;
   }
 
   function drawFontButtons() {
@@ -295,6 +317,7 @@ export function renderMock(root, ctx, nav) {
     $('m-flag').classList.toggle('is-on', Boolean(active.flags[i]));
 
     drawClock();
+    moveFocus($('m-qtext'));
     window.scrollTo(0, 0);
   }
 
@@ -450,6 +473,7 @@ export function renderMock(root, ctx, nav) {
     $('m-again').addEventListener('click', startExam);
     $('m-back').addEventListener('click', () => nav.showTab('quiz'));
 
+    moveFocus(root.querySelector('.q-score'));
     // 最後の問題を解いた位置のまま結果画面に来ると途中から表示されてしまうため、
     // drawHome / drawExam / drawQuestion と同様に先頭へ戻す。
     window.scrollTo(0, 0);

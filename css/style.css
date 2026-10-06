@@ -337,3 +337,7 @@ select { width: 100%; min-height: 48px; padding: 0 10px; font: inherit;
 #f-ctrl .btn { width: 100%; }
 .f-judge { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .f-judge[hidden] { display: none; }
+
+/* プログラムからフォーカスを移した読み物（問題文・答え・見出しなど）には枠線を出さない。
+   操作する対象ではなく、読み上げの位置を合わせるためだけに移しているので。 */
+[tabindex="-1"]:focus { outline: none; }

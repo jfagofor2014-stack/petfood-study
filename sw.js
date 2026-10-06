@@ -1,7 +1,7 @@
 // アプリ本体だけをキャッシュする。教材データは IndexedDB にあるため対象外。
 // アプリのファイルを更新したら CACHE の版番号を上げること。
 
-const CACHE = 'pfs-v5';
+const CACHE = 'pfs-v6';
 
 const ASSETS = [
   './',
@@ -23,6 +23,7 @@ const ASSETS = [
   'js/lib/settings.js',
   'js/lib/speech.js',
   'js/lib/wakelock.js',
+  'js/views/a11y.js',
   'js/views/flash.js',
   'js/views/mock.js',
   'js/views/onboarding.js',
@@ -37,7 +38,13 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
+  // ブラウザの HTTP キャッシュに古いファイルが残っていると、addAll はそれを新しいキャッシュへ
+  // 取り込んでしまう（版番号を上げても古いコードが配られる）。cache: 'reload' で必ずサーバから取る。
+  e.waitUntil(
+    caches.open(CACHE)
+      .then(c => c.addAll(ASSETS.map(u => new Request(u, { cache: 'reload' }))))
+      .then(() => self.skipWaiting())
+  );
 });
 
 self.addEventListener('activate', e => {

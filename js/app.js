@@ -13,6 +13,7 @@ import { renderQuiz } from './views/quiz.js';
 import { renderSettings } from './views/settings.js';
 import { renderMock } from './views/mock.js';
 import { renderFlash } from './views/flash.js';
+import { moveFocus } from './views/a11y.js';
 
 const el = {
   onboarding: document.getElementById('onboarding'),
@@ -79,6 +80,9 @@ function showTab(name) {
   const render = views[name];
   if (render) teardown = render(el.view, ctx, { showTab }) || null;
   else el.view.innerHTML = '<div class="card muted">この画面はまだありません。</div>';
+  // 画面が自分でより具体的な場所（問題文など）へフォーカスを移さなかったときだけ、
+  // 画面の先頭へ移す。タブのボタンにフォーカスが残ったままだと、新しい画面が読まれない。
+  if (!el.view.contains(document.activeElement)) moveFocus(el.view);
 }
 
 function startMain(book) {

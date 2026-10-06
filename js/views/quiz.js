@@ -5,6 +5,7 @@ import { pickForSection, pickForChapter, pickWeak } from '../lib/quizpick.js';
 import { listSections, findSection } from '../lib/book.js';
 import { openPlayerAt } from './player.js';
 import { escapeHtml as esc } from '../lib/html.js';
+import { moveFocus } from './a11y.js';
 
 const PER_SECTION = 5;
 const PER_CHAPTER = 10;
@@ -82,6 +83,8 @@ export function renderQuiz(root, ctx, nav) {
         run(set);
       });
     }
+    // 「テストの選択に戻る」で戻ってくると押したボタンが消えるので、画面の先頭へ移す。
+    moveFocus(root.firstElementChild);
   }
 
   // ---- 出題〜採点〜結果 --------------------------------------------------
@@ -113,6 +116,7 @@ export function renderQuiz(root, ctx, nav) {
       for (const b of root.querySelectorAll('.q-choice')) {
         b.addEventListener('click', () => answer(q, Number(b.dataset.i)));
       }
+      moveFocus(root.querySelector('.q-text'));
     }
 
     function answer(q, chosen) {
@@ -150,6 +154,8 @@ export function renderQuiz(root, ctx, nav) {
         if (at < set.length) show(); else result();
       });
       root.querySelector('#q-after').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      // 選んだ選択肢は disabled になってフォーカスが外れるので、正誤と解説へ移す。
+      moveFocus(root.querySelector('#q-after'));
     }
 
     function result() {
@@ -194,6 +200,7 @@ export function renderQuiz(root, ctx, nav) {
         });
       }
       root.querySelector('#q-back').addEventListener('click', menu);
+      moveFocus(root.querySelector('.q-score'));
     }
   }
 }

@@ -8,6 +8,7 @@ import { pickForSection, pickForChapter, pickWeak } from '../lib/quizpick.js';
 import { listSections } from '../lib/book.js';
 import { openPlayerAt } from './player.js';
 import { escapeHtml as esc } from '../lib/html.js';
+import { moveFocus } from './a11y.js';
 
 const WEAK_MAX = 20;
 const QUIT_GUARD_MS = 400;
@@ -100,6 +101,8 @@ export function renderFlash(root, ctx, nav) {
       });
     }
     $('f-back').addEventListener('click', () => nav.showTab('quiz'));
+    // 「やめる」「別のカードを選ぶ」で戻ってくると押したボタンが消えるので、画面の先頭へ移す。
+    moveFocus(root.firstElementChild);
   }
 
   // ---- カード --------------------------------------------------------
@@ -164,6 +167,7 @@ export function renderFlash(root, ctx, nav) {
       parked = null;
       menu();
     });
+    moveFocus($('f-q'));
     window.scrollTo(0, 0);
   }
 
@@ -197,6 +201,8 @@ export function renderFlash(root, ctx, nav) {
     });
     $('f-known').addEventListener('click', () => judge(card, true));
     $('f-unsure').addEventListener('click', () => judge(card, false));
+    // 「答えを見る」を押すとそのボタン自体が消えるので、めくった答えへ移す。
+    moveFocus($('f-back-side'));
   }
 
   function judge(card, ok) {
@@ -222,7 +228,7 @@ export function renderFlash(root, ctx, nav) {
 
     root.innerHTML = `
       <div class="card">
-        <div class="q-score">${total}枚を覚えました</div>
+        <div class="q-score" id="f-score">${total}枚を覚えました</div>
         <div class="muted" style="margin-top:6px">1回で覚えたカード ${first} / ${total}</div>
       </div>
       <div class="s-btns">
@@ -232,6 +238,7 @@ export function renderFlash(root, ctx, nav) {
     `;
     $('f-again').addEventListener('click', menu);
     $('f-back').addEventListener('click', () => nav.showTab('quiz'));
+    moveFocus($('f-score'));
     window.scrollTo(0, 0);
   }
 
