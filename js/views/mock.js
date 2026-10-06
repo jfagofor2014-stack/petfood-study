@@ -273,12 +273,17 @@ export function renderMock(root, ctx, nav) {
   // （押したボタン）へフォーカスを戻す。解答状況は今の問題のマスへ移すと位置が分かりやすい。
   function openPanel(ov) {
     returnFocus = document.activeElement;
+    // aria-modal を名乗る以上、裏の画面は触れないようにする。触れると、解答状況を
+    // 開いたまま「試験終了」を押してパネルが二重に開く、裏で問題が変わる、などの事故が起きる。
+    $('m-exam').inert = true;
     ov.hidden = false;
     moveFocus(ov.querySelector('.is-now') || ov.querySelector('button'));
   }
 
   function closePanel(ov) {
     ov.hidden = true;
+    // inert の要素にはフォーカスできないので、フォーカスを戻す前に外す。
+    $('m-exam').inert = false;
     if (returnFocus && root.contains(returnFocus)) moveFocus(returnFocus);
     returnFocus = null;
   }
