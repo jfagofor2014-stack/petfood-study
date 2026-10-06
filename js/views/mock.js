@@ -102,7 +102,8 @@ export function renderMock(root, ctx, nav) {
     `;
 
     if ($('m-start')) $('m-start').addEventListener('click', startExam);
-    if ($('m-resume')) $('m-resume').addEventListener('click', drawExam);
+    // drawExam を直接渡すと第1引数にクリックの Event が入ってしまうので、引数なしで呼ぶ。
+    if ($('m-resume')) $('m-resume').addEventListener('click', () => drawExam());
     if ($('m-discard')) $('m-discard').addEventListener('click', () => {
       if (!confirm('中断した模試を破棄します。よろしいですか。')) return;
       mockState.clearActive();
@@ -132,12 +133,15 @@ export function renderMock(root, ctx, nav) {
     // （storage の包みは書き込み失敗を投げず、非 null を返す）。ここで弾くのは形の不正のみ。
     if (!saved) return;
 
-    drawExam();
+    drawExam(saved);
   }
 
   // ---- 解答中 --------------------------------------------------------
-  function drawExam() {
-    const active = mockState.getActive();
+  // 開始直後は startExam が作った状態を受け取り、保存を読み直さない。保存に失敗している
+  // 端末では読み直すと null になり、開始を押しても何も起きずトップへ戻ってしまうため。
+  // 保存できないのは「中断して後で再開できない」だけで、目の前の60分を解けない理由にはならない。
+  // 再開のときは引数なしで呼び、保存済みのものを読む。
+  function drawExam(active = mockState.getActive()) {
     const qs = resolveActive(active);
     // 中断データが無い・使えないときはトップへ戻す。ここで落とさない。
     if (!qs) { drawHome(); return; }
